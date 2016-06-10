@@ -29,8 +29,8 @@ CSIP_RETCODE CSIPfreeModel(CSIP_MODEL*);
 
 
 int CSIPaddVar(CSIP_MODEL*, double lowerbound, double upperbound, int vartype);
-CSIP_RETCODE CSIPchgVarLB(CSIP_MODEL*, int numindices, int *indices, double *coefs);
-CSIP_RETCODE CSIPchgVarUB(CSIP_MODEL*, int numindices, int *indices, double *coefs);
+CSIP_RETCODE CSIPchgVarLB(CSIP_MODEL*, int numindices, int *indices, double *lowerbounds);
+CSIP_RETCODE CSIPchgVarUB(CSIP_MODEL*, int numindices, int *indices, double *upperbounds);
 
 int CSIPaddLinCons(CSIP_MODEL*, int numindices, int *indices, double *coefs, double lhs, double rhs);
 
