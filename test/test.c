@@ -1,6 +1,9 @@
+#include <stdlib.h>
+#include <assert.h>
 #include <csip.h>
 #include <math.h>
 
+#define const  
 
 
 void test_lp() {
@@ -13,9 +16,9 @@ void test_lp() {
       solution is (0.75,0) with objval -0.75
     */
     int numindices = 2;
-    const int *indices = {0,1};
-    const double *objcoef = {-1.0, 0.0};
-    const double *conscoef = {2.0, 1.0};
+    const int indices[] = {0,1};
+    const double objcoef[] = {-1.0, 0.0};
+    const double conscoef[] = {2.0, 1.0};
     double solution[2];
     CSIP_MODEL *m;
     CSIP_RETCODE status;
@@ -40,7 +43,7 @@ void test_lp() {
     assert(status == CSIP_RETCODE_OK);
     assert(cons_idx == 0);
 
-    CSIP_RETCODE status = CSIPsolve(m);
+    status = CSIPsolve(m);
     assert(status == CSIP_RETCODE_OK);
 
     int solvestatus = CSIPgetStatus(m);
@@ -55,7 +58,7 @@ void test_lp() {
     assert(fabs(solution[0] - 0.75) <= 1e-5);
     assert(fabs(solution[1] - 0.0) <= 1e-5);
 
-    CSIPfreemodel(m);
+    CSIPfreeModel(m);
 
 }
 
@@ -69,9 +72,9 @@ void test_mip() {
       solution is (1,0,0,1,1) with objval -16
     */
     int numindices = 5;
-    const int *indices = {0,1,2,3,4};
-    const double *objcoef = {-5.0, -3.0, -2.0, -7.0, -4.0};
-    const double *conscoef = {2.0, 8.0, 4.0, 2.0, 5.0};
+    const int indices[] = {0,1,2,3,4};
+    const double objcoef[] = {-5.0, -3.0, -2.0, -7.0, -4.0};
+    const double conscoef[] = {2.0, 8.0, 4.0, 2.0, 5.0};
     double solution[5];
     CSIP_MODEL *m;
     CSIP_RETCODE status;
@@ -88,11 +91,11 @@ void test_mip() {
     status = CSIPsetObj(m, numindices, indices, objcoef);
     assert(status == CSIP_RETCODE_OK);
     int cons_idx;
-    status = CSIPaddLinCons(m, numindices, indices, conscoef, -INFINITY, 10.0);
+    status = CSIPaddLinCons(m, numindices, indices, conscoef, -INFINITY, 10.0, &cons_idx);
     assert(status == CSIP_RETCODE_OK);
     assert(cons_idx == 0);
 
-    CSIP_RETCODE status = CSIPsolve(m);
+    status = CSIPsolve(m);
     assert(status == CSIP_RETCODE_OK);
 
     int solvestatus = CSIPgetStatus(m);
@@ -110,7 +113,7 @@ void test_mip() {
     assert(fabs(solution[3] - 1.0) <= 1e-5);
     assert(fabs(solution[4] - 1.0) <= 1e-5);
 
-    CSIPfreemodel(m);
+    CSIPfreeModel(m);
 }
 
 void test_mip2() {
@@ -121,8 +124,8 @@ void test_mip2() {
       x Integer
     */
     int numindices = 1;
-    const int *indices = {0};
-    const double *objcoef = {1.0};
+    const int indices[] = {0};
+    const double objcoef[] = {1.0};
     CSIP_MODEL *m;
     CSIP_RETCODE status;
 
@@ -137,13 +140,13 @@ void test_mip2() {
     status = CSIPsetObj(m, numindices, indices, objcoef);
     assert(status == CSIP_RETCODE_OK);
 
-    CSIP_RETCODE status = CSIPsolve(m);
+    status = CSIPsolve(m);
     assert(status == CSIP_RETCODE_OK);
 
     int solvestatus = CSIPgetStatus(m);
     assert(solvestatus == CSIP_STATUS_UNBOUNDED);
 
-    CSIPfreemodel(m);
+    CSIPfreeModel(m);
 }
 
 void test_mip3() {
@@ -155,9 +158,9 @@ void test_mip3() {
       x <= 1
     */
     int numindices = 1;
-    const int *indices = {0};
-    const double *objcoef = {1.0};
-    const double *conscoef = {1.0};
+    const int     indices[] = {0};
+    const double  objcoef[] = {1.0};
+    const double conscoef[] = {1.0};
     CSIP_MODEL *m;
     CSIP_RETCODE status;
 
@@ -175,13 +178,13 @@ void test_mip3() {
     status = CSIPaddLinCons(m, numindices, indices, conscoef, 2.0, INFINITY, NULL);
     assert(status == CSIP_RETCODE_OK);
 
-    CSIP_RETCODE status = CSIPsolve(m);
+    status = CSIPsolve(m);
     assert(status == CSIP_RETCODE_OK);
 
     int solvestatus = CSIPgetStatus(m);
     assert(solvestatus == CSIP_STATUS_INFEASIBLE);
 
-    CSIPfreemodel(m);
+    CSIPfreeModel(m);
 }
 
 void test_socp() {
@@ -192,13 +195,13 @@ void test_socp() {
            t >= 0
      */
 
-    const int *objindices = {0};
-    const double *objcoef = {1.0};
-    const int *linindices = {1,2};
-    const int *lincoef = {1.0,1.0};
-    const int *quadi = {0,1,2};
-    const int *quadj = {0,1,2};
-    const int *quadcoef = {-1.0,1.0,1.0};
+    const int objindices[] = {0};
+    const double objcoef[] = {1.0};
+    const int linindices[] = {1,2};
+    const double lincoef[] = {1.0,1.0};
+    const int quadi[] = {0,1,2};
+    const int quadj[] = {0,1,2};
+    const double quadcoef[] = {-1.0,1.0,1.0};
     double solution[3];
 
     CSIP_MODEL *m;
@@ -233,7 +236,7 @@ void test_socp() {
     status = CSIPaddQuadCons(m, 0, NULL, NULL, 3, quadi, quadj, quadcoef, -INFINITY, 0.0, NULL);
     assert(status == CSIP_RETCODE_OK);
 
-    CSIP_RETCODE status = CSIPsolve(m);
+    status = CSIPsolve(m);
     assert(status == CSIP_RETCODE_OK);
 
     int solvestatus = CSIPgetStatus(m);
@@ -249,7 +252,7 @@ void test_socp() {
     assert(fabs(solution[1] - 0.5) <= 1e-5);
     assert(fabs(solution[2] - 0.5) <= 1e-5);
 
-    CSIPfreemodel(m);
+    CSIPfreeModel(m);
 }
 
 struct MyData {
@@ -261,8 +264,8 @@ CSIP_RETCODE lazy_callback(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata) {
 
     struct MyData *data = (struct MyData*) userdata;
     assert(data->foo == 10);
-    const int *indices = {0,1};
-    const double *coef = {1.0,1.0};
+    const int indices[] = {0,1};
+    const double coef[] = {1.0,1.0};
 
     CSIPcbGetVarValues(cb, data->storage);
 
@@ -283,8 +286,8 @@ void test_lazy() {
        solution is (1,2)
      */
 
-    const int *objindices = {0,1};
-    const double *objcoef = {0.5,1.0};
+    const int objindices[] = {0,1};
+    const double objcoef[] = {0.5,1.0};
     double solution[2];
 
     CSIP_MODEL *m;
@@ -306,12 +309,12 @@ void test_lazy() {
 
     // TODO: set maximize
 
-    struct MyData userdata { 10, &solution[0] };
+    struct MyData userdata = { 10, &solution[0] };
 
-    status = CSIPaddLazyCallback(m, lazycallback, 1, &userdata);
+    status = CSIPaddLazyCallback(m, lazy_callback, 1, &userdata);
     assert(status == CSIP_RETCODE_OK);
 
-    CSIP_RETCODE status = CSIPsolve(m);
+    status = CSIPsolve(m);
     assert(status == CSIP_RETCODE_OK);
 
     int solvestatus = CSIPgetStatus(m);
@@ -326,15 +329,15 @@ void test_lazy() {
     assert(fabs(solution[0] - 2.0) <= 1e-5);
     assert(fabs(solution[1] - 1.0) <= 1e-5);
 
-    CSIPfreemodel(m);
+    CSIPfreeModel(m);
 }
 
 CSIP_RETCODE lazy_callback2(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata) {
 
     struct MyData *data = (struct MyData*) userdata;
     assert(data->foo == 11);
-    const int *indices = {0};
-    const double *coef = {1.0};
+    const int indices[] = {0};
+    const double coef[] = {1.0};
 
     CSIPcbGetVarValues(cb, data->storage);
     // make sure we didn't get a fractional solution
@@ -355,8 +358,8 @@ void test_lazy2() {
        solution is -10
      */
 
-    const int *objindices = {0};
-    const double *objcoef = {-1.0};
+    const int objindices[] = {0};
+    const double objcoef[] = {-1.0};
     double solution[1];
 
     CSIP_MODEL *m;
@@ -372,13 +375,13 @@ void test_lazy2() {
     status = CSIPsetObj(m, 1, objindices, objcoef);
     assert(status == CSIP_RETCODE_OK);
 
-    struct MyData userdata { 10, &solution[0] };
+    struct MyData userdata = { 10, &solution[0] };
 
     // test fractional = 0
-    status = CSIPaddLazyCallback(m, lazycallback2, 0, &userdata);
+    status = CSIPaddLazyCallback(m, lazy_callback2, 0, &userdata);
     assert(status == CSIP_RETCODE_OK);
 
-    CSIP_RETCODE status = CSIPsolve(m);
+    status = CSIPsolve(m);
     assert(status == CSIP_RETCODE_OK);
 
     int solvestatus = CSIPgetStatus(m);
@@ -392,7 +395,7 @@ void test_lazy2() {
 
     assert(fabs(solution[0] - 10.0) <= 1e-5);
 
-    CSIPfreemodel(m);
+    CSIPfreeModel(m);
 }
 
 int main() {
