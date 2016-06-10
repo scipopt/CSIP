@@ -328,3 +328,83 @@ void test_lazy() {
 
     CSIPfreemodel(m);
 }
+
+CSIP_RETCODE lazy_callback2(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata) {
+
+    struct MyData *data = (struct MyData*) userdata;
+    assert(data->foo == 11);
+    const int *indices = {0};
+    const double *coef = {1.0};
+
+    CSIPcbGetVarValues(cb, data->storage);
+    // make sure we didn't get a fractional solution
+    assert(data->storage[0] - floor(data->storage[0]) < 1e-4);
+
+    // always add the cut x <= 10
+    CSIPcbAddLinCons(cb, 1, indices, coef, -INFINITY, 10.5, 0);
+
+    return CSIP_RETCODE_OK;
+}
+
+void test_lazy2() {
+
+    /*
+       min -x
+       s.t. x <= 100.5, integer
+            x <= 10.5 (lazy)
+       solution is -10
+     */
+
+    const int *objindices = {0};
+    const double *objcoef = {-1.0};
+    double solution[1];
+
+    CSIP_MODEL *m;
+    CSIP_RETCODE status;
+
+    status = CSIPcreateModel(&m);
+    assert(status == CSIP_RETCODE_OK);
+
+    // x
+    status = CSIPaddVar(m, -INFINITY, 100.5, CSIP_VARTYPE_INTEGER, NULL);
+    assert(status == CSIP_RETCODE_OK);
+
+    status = CSIPsetObj(m, 1, objindices, objcoef);
+    assert(status == CSIP_RETCODE_OK);
+
+    struct MyData userdata { 10, &solution[0] };
+
+    // test fractional = 0
+    status = CSIPaddLazyCallback(m, lazycallback2, 0, &userdata);
+    assert(status == CSIP_RETCODE_OK);
+
+    CSIP_RETCODE status = CSIPsolve(m);
+    assert(status == CSIP_RETCODE_OK);
+
+    int solvestatus = CSIPgetStatus(m);
+    assert(solvestatus == CSIP_STATUS_OPTIMAL);
+
+    double objval = CSIPgetObjValue(m);
+
+    assert(fabs(objval - (-10)) <= 1e-5);
+
+    status = CSIPgetVarValues(m, solution);
+
+    assert(fabs(solution[0] - 10.0) <= 1e-5);
+
+    CSIPfreemodel(m);
+}
+
+int main() {
+
+    // run all the tests
+    test_lp();
+    test_mip();
+    test_mip2();
+    test_mip3();
+    test_socp();
+    test_lazy();
+    test_lazy2();
+
+    return 0;
+}
