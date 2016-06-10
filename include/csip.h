@@ -36,6 +36,7 @@ CSIP_RETCODE CSIPsetObj(CSIP_MODEL*, int numindices, int *indices, double *coefs
 CSIP_RETCODE CSIPsolve(CSIP_MODEL*);
 
 CSIP_RETCODE CSIPgetVarValues(CSIP_MODEL*, double *output);
+double CSIPgetObjValue(CSIP_MODEL*);
 
 CSIP_RETCODE CSIPsetIntParam(CSIP_MODEL*, const char *name, int value);
 CSIP_RETCODE CSIPsetDoubleParam(CSIP_MODEL*, const char *name, double value);
