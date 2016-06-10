@@ -252,8 +252,79 @@ void test_socp() {
     CSIPfreemodel(m);
 }
 
+struct MyData {
+    int foo;
+    double *storage;
+};
+
+CSIP_RETCODE lazy_callback(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata) {
+
+    struct MyData *data = (struct MyData*) userdata;
+    assert(data->foo == 10);
+    const int *indices = {0,1};
+    const double *coef = {1.0,1.0};
+
+    CSIPcbGetVarValues(cb, data->storage);
+
+    // enforce x + y <= 3, global cut
+    if (data->storage[0] + data->storage[1] > 3) {
+        CSIPcbAddLinCons(cb, 2, indices, coef, -INFINITY, 3.0, 0);
+    }
+
+    return CSIP_RETCODE_OK;
+}
+
 void test_lazy() {
 
+    /*
+       max 0.5x + y
+       s.t. 0 <= x,y <= 2
+            x + y <= 3 (lazy)
+       solution is (1,2)
+     */
 
+    const int *objindices = {0,1};
+    const double *objcoef = {0.5,1.0};
+    double solution[2];
 
+    CSIP_MODEL *m;
+    CSIP_RETCODE status;
+
+    status = CSIPcreateModel(&m);
+    assert(status == CSIP_RETCODE_OK);
+
+    // x
+    status = CSIPaddVar(m, -INFINITY, 2.0, CSIP_VARTYPE_INTEGER, NULL);
+    assert(status == CSIP_RETCODE_OK);
+
+    // y
+    status = CSIPaddVar(m, -INFINITY, 2.0, CSIP_VARTYPE_INTEGER, NULL);
+    assert(status == CSIP_RETCODE_OK);
+
+    status = CSIPsetObj(m, 2, objindices, objcoef);
+    assert(status == CSIP_RETCODE_OK);
+
+    // TODO: set maximize
+
+    struct MyData userdata { 10, &solution[0] };
+
+    status = CSIPaddLazyCallback(m, lazycallback, 1, &userdata);
+    assert(status == CSIP_RETCODE_OK);
+
+    CSIP_RETCODE status = CSIPsolve(m);
+    assert(status == CSIP_RETCODE_OK);
+
+    int solvestatus = CSIPgetStatus(m);
+    assert(solvestatus == CSIP_STATUS_OPTIMAL);
+
+    double objval = CSIPgetObjValue(m);
+
+    assert(fabs(objval - 2) <= 1e-5);
+
+    status = CSIPgetVarValues(m, solution);
+
+    assert(fabs(solution[0] - 2.0) <= 1e-5);
+    assert(fabs(solution[1] - 1.0) <= 1e-5);
+
+    CSIPfreemodel(m);
 }
