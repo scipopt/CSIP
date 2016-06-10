@@ -28,20 +28,20 @@ CSIP_RETCODE CSIPfreeModel(CSIP_MODEL*);
 #define CSIP_VARTYPE_CONTINUOUS 4
 
 
-int CSIPaddVar(CSIP_MODEL*, double lowerbound, double upperbound, int vartype);
+CSIP_RETCODE CSIPaddVar(CSIP_MODEL*, double lowerbound, double upperbound, int vartype, int *idx);
 CSIP_RETCODE CSIPchgVarLB(CSIP_MODEL*, int numindices, int *indices, double *lowerbounds);
 CSIP_RETCODE CSIPchgVarUB(CSIP_MODEL*, int numindices, int *indices, double *upperbounds);
 
-int CSIPaddLinCons(CSIP_MODEL*, int numindices, int *indices, double *coefs, double lhs, double rhs);
+CSIP_RETCODE CSIPaddLinCons(CSIP_MODEL*, int numindices, int *indices, double *coefs, double lhs, double rhs, int *idx);
 
 CSIP_RETCODE CSIPaddQuadCons(CSIP_MODEL*, int numlinindices, int *linindices,
                         double *lincoefs, int numquadterms,
                         int *quadrowindices, int *quadcolindices,
-                        double *quadcoefs, double lhs, double rhs);
+                        double *quadcoefs, double lhs, double rhs, int *idx);
 
-CSIP_RETCODE CSIPaddSOS1(CSIP_MODEL*, int numindices, int *indices, double *weights);
+CSIP_RETCODE CSIPaddSOS1(CSIP_MODEL*, int numindices, int *indices, double *weights, int *idx);
 
-CSIP_RETCODE CSIPaddSOS2(CSIP_MODEL*, int numindices, int *indices, double *weights);
+CSIP_RETCODE CSIPaddSOS2(CSIP_MODEL*, int numindices, int *indices, double *weights, int *idx);
 
 CSIP_RETCODE CSIPsetObj(CSIP_MODEL*, int numindices, int *indices, double *coefs);
 
