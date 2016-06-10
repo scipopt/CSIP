@@ -4,6 +4,7 @@ typedef int CSIP_RETCODE;
 
 /* return codes */
 #define CSIP_RETCODE_OK 0
+#define CSIP_RETCODE_FAIL 1
 
 CSIP_RETCODE CSIPcreateModel(CSIP_MODEL**);
 CSIP_RETCODE CSIPfreeModel(CSIP_MODEL*);
