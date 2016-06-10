@@ -2,8 +2,18 @@
 typedef struct model CSIP_MODEL;
 typedef int CSIP_RETCODE;
 
+/* return codes */
+#define CSIP_RETCODE_OK 0
+
 CSIP_RETCODE CSIPcreateModel(CSIP_MODEL**);
 CSIP_RETCODE CSIPfreeModel(CSIP_MODEL*);
+
+/* variable types */
+#define CSIP_VARTYPE_BINARY 1
+#define CSIP_VARTYPE_INTEGER 2
+#define CSIP_VARTYPE_IMPLINT 3
+#define CSIP_VARTYPE_CONTINUOUS 4
+
 
 int CSIPaddVar(CSIP_MODEL*, double lowerbound, double upperbound, int vartype);
 CSIP_RETCODE CSIPchgVarLB(CSIP_MODEL*, int numindices, int *indices, double *coefs);
