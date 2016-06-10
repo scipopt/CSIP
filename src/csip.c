@@ -13,14 +13,14 @@
 
 #define TODO 1000
 
-struct
+struct csip_model
 {
    SCIP* scip;
    int nvars;
-   SCIP_VAR* vars[TODO]
+   SCIP_VAR* vars[TODO];
    int nconss;
-   SCIP_CONS* conss[TODO]
-} model;
+   SCIP_CONS* conss[TODO];
+};
 
 /*
  * local methods
@@ -95,7 +95,6 @@ CSIP_RETCODE CSIPcreateModel(CSIP_MODEL** modelptr)
 CSIP_RETCODE CSIPfreeModel(CSIP_MODEL* model)
 {
    CSIP_RETCODE retcode;
-   CSIP_MODEL* model;
 
    //CSIP_CALL( SCIPfreePtrarray(model->scip, &model->conss) );
    //CSIP_CALL( SCIPfreePtrarray(model->scip, &model->vars) );
@@ -199,10 +198,10 @@ CSIP_RETCODE CSIPaddQuadCons(CSIP_MODEL* model, int numlinindices, int *linindic
       //var2 = (SCIP_VAR *)SCIPgetPtrarrayVal(scip, model->vars, quadcolindices[i]);
       var2 = model->vars[quadcolindices[i]];
 
-      CSIP_CALL( SCIPaddBilinTermQuadratic(scip, cons, var1, var2, quadcoefs[j]) );
+      CSIP_CALL( SCIPaddBilinTermQuadratic(scip, cons, var1, var2, quadcoefs[i]) );
    }
 
-   CSIP_CALL( addCons(scip, cons, idx) );
+   CSIP_CALL( addCons(model, cons, idx) );
 
    return CSIP_RETCODE_OK;
 }
@@ -258,7 +257,7 @@ CSIP_RETCODE CSIPgetVarValues(CSIP_MODEL* model, double *output)
    for( i = 0; i < model->nvars; ++i )
    {
       //var = (SCIP_VAR *)SCIPgetPtrarrayVal(scip, model->vars, indices[i]);
-      var = model->vars[indices[i]];
+      var = model->vars[i];
       output[i] = SCIPgetSolVal(scip, SCIPgetBestSol(scip), var);
    }
 
@@ -308,15 +307,16 @@ void *CSIPgetInternalSCIP(CSIP_MODEL* model)
 /* constraint handler data */
 struct SCIP_ConshdlrData
 {
-   CSIP_MODEL model;
+   CSIP_MODEL* model;
    CSIP_LAZYCALLBACK callback;
    void* userdata;
-   int nconssadded;
    SCIP_Bool checkonly;
    SCIP_Bool feasible;
    SCIP_SOL* sol;
+
+   //CSIP_CBDATA* cbdata;
 };
-typedef CSIP_CBDATA CONSHDLRDATA;
+
 
 
 SCIP_DECL_CONSENFOLP(consEnfolpLazy)
@@ -326,8 +326,7 @@ SCIP_DECL_CONSENFOLP(consEnfolpLazy)
 
    *result = SCIP_FEASIBLE;
 
-   conshdlrdata = SCIPconshdlrGetData(scip, conshdlr);
-   nconssadded = conshdlrdata->nconssadded;
+   conshdlrdata = SCIPconshdlrGetData(conshdlr);
    conshdlrdata->checkonly = FALSE;
    conshdlrdata->feasible = TRUE;
 
@@ -353,8 +352,7 @@ SCIP_DECL_CONSCHECK(consCheckLazy)
 
    *result = SCIP_FEASIBLE;
 
-   conshdlrdata = SCIPconshdlrGetData(scip, conshdlr);
-   nconssadded = conshdlrdata->nconssadded;
+   conshdlrdata = SCIPconshdlrGetData(conshdlr);
    conshdlrdata->checkonly = TRUE;
    conshdlrdata->feasible = TRUE;
    conshdlrdata->sol = sol;
@@ -374,12 +372,12 @@ SCIP_DECL_CONSLOCK(consLockLazy)
    SCIP_VAR* var;
    SCIP_CONSHDLRDATA* conshdlrdata;
 
-   assert(scip == model->scip);
+   assert(scip == conshdlrdata->model->scip);
 
-   for( i = 0; i < model->nvars; ++i )
+   for( i = 0; i < conshdlrdata->model->nvars; ++i )
    {
       //var = (SCIP_VAR *)SCIPgetPtrarrayVal(scip, model->vars, indices[i]);
-      var = model->vars[indices[i]];
+      var = conshdlrdata->model->vars[i];
       CSIP_CALL( SCIPaddVarLocks(scip, var, nlockspos + nlocksneg, nlockspos + nlocksneg) );
    }
 
@@ -394,8 +392,11 @@ CSIP_RETCODE CSIPaddLazyCallback(CSIP_MODEL* model, CSIP_LAZYCALLBACK callback, 
 {
    SCIP_CONSHDLRDATA* conshdlrdata;
    SCIP_CONSHDLR* conshdlr;
+   SCIP* scip;
    int priority;
    char name[SCIP_MAXSTRLEN];
+
+   scip = model->scip;
 
    /* it is -1 or 1 because cons_integral has priority 0 */
    priority = fractional ? -1 : 1;
@@ -406,7 +407,8 @@ CSIP_RETCODE CSIPaddLazyCallback(CSIP_MODEL* model, CSIP_LAZYCALLBACK callback, 
    conshdlrdata->callback = callback;
    conshdlrdata->userdata = userdata;
 
-   SCIPsnprintf(name, SCIP_MAXSTRLEN, "lazycons_%d", model->nlazyconss);
+   //SCIPsnprintf(name, SCIP_MAXSTRLEN, "lazycons_%d", model->nlazyconss);
+   SCIPsnprintf(name, SCIP_MAXSTRLEN, "lazycons_");
    SCIP_CALL( SCIPincludeConshdlrBasic(scip, &conshdlr, name, "lazy constraint callback",
          priority, -1, -1, FALSE,
          consEnfolpLazy, consEnfopsLazy, consCheckLazy, consLockLazy,
@@ -430,10 +432,10 @@ CSIP_RETCODE CSIPcbGetVarValues(CSIP_CBDATA* cbdata, double *output)
    else
       sol = NULL;
 
-   for( i = 0; i < model->nvars; ++i )
+   for( i = 0; i < cbdata->model->nvars; ++i )
    {
       //var = (SCIP_VAR *)SCIPgetPtrarrayVal(scip, model->vars, indices[i]);
-      var = model->vars[indices[i]];
+      var = cbdata->model->vars[i];
       output[i] = SCIPgetSolVal(scip, sol, var);
    }
 
@@ -465,7 +467,7 @@ CSIP_RETCODE CSIPcbAddLinCons(CSIP_CBDATA* cbdata, int numindices, int *indices,
 
    if( !cbdata->checkonly )
    {
-      CSIP_CALL( addLinCons(cbdata->model, cons) )
+      CSIP_CALL( addLinCons(cbdata->model, cons) );
    }
 
    return CSIP_RETCODE_OK;

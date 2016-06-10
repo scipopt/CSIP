@@ -1,5 +1,5 @@
 
-typedef struct model CSIP_MODEL;
+typedef struct csip_model CSIP_MODEL;
 typedef int CSIP_RETCODE;
 typedef int CSIP_STATUS;
 
@@ -63,7 +63,7 @@ int CSIPgetNumVars(CSIP_MODEL*);
 void *CSIPgetInternalSCIP(CSIP_MODEL*);
 
 /* callback functions */
-typedef struct cbdata CSIP_CBDATA;
+typedef struct SCIP_ConshdlrData CSIP_CBDATA;
 CSIP_RETCODE CSIPcbGetVarValues(CSIP_CBDATA*, double *output);
 CSIP_RETCODE CSIPcbAddLinCons(CSIP_CBDATA*, int numindices, int *indices, double *coefs, double lhs, double rhs, int islocal);
 
