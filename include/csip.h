@@ -1,10 +1,22 @@
 
 typedef struct model CSIP_MODEL;
 typedef int CSIP_RETCODE;
+typedef int CSIP_STATUS;
 
 /* return codes */
 #define CSIP_RETCODE_OK 0
 #define CSIP_RETCODE_FAIL 1
+
+/* solver status */
+#define CSIP_STATUS_OPTIMAL 0
+#define CSIP_STATUS_INFEASIBLE 1
+#define CSIP_STATUS_UNBOUNDED 2
+#define CSIP_STATUS_INFORUNBD 3
+#define CSIP_STATUS_NODELIMIT 4
+#define CSIP_STATUS_TIMELIMIT 5
+#define CSIP_STATUS_MEMLIMIT 6
+#define CSIP_STATUS_USERLIMIT 7
+#define CSIP_STATUS_UNKNOWN 8
 
 CSIP_RETCODE CSIPcreateModel(CSIP_MODEL**);
 CSIP_RETCODE CSIPfreeModel(CSIP_MODEL*);
@@ -37,6 +49,7 @@ CSIP_RETCODE CSIPsolve(CSIP_MODEL*);
 
 CSIP_RETCODE CSIPgetVarValues(CSIP_MODEL*, double *output);
 double CSIPgetObjValue(CSIP_MODEL*);
+CSIP_STATUS CSIPgetStatus(CSIP_MODEL*);
 
 CSIP_RETCODE CSIPsetIntParam(CSIP_MODEL*, const char *name, int value);
 CSIP_RETCODE CSIPsetDoubleParam(CSIP_MODEL*, const char *name, double value);
