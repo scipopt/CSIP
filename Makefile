@@ -40,7 +40,6 @@ TESTBIN 	= $(TESTDIR)/test # don't know where to put the test executable
 CSIPSRC 	= $(CSIPSRCDIR)/csip.c
 CSIPLIB 	= $(CSIPLIBDIR)/libcsip.so
 
-$(warning testflags = $(TESTFLAGS), linktestflags = $(LINKTESTFLAGS))
 # RULES
 .PHONY: all
 all: 		$(CSIPLIBDIR) $(CSIPLIB)
