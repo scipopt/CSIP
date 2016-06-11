@@ -95,7 +95,6 @@ CSIP_RETCODE addCons(CSIP_MODEL* model, SCIP_CONS* cons, int* idx)
  */
 CSIP_RETCODE CSIPcreateModel(CSIP_MODEL** modelptr)
 {
-   CSIP_RETCODE retcode;
    CSIP_MODEL* model;
 
    *modelptr = (CSIP_MODEL *)malloc(sizeof(CSIP_MODEL));
@@ -119,7 +118,6 @@ CSIP_RETCODE CSIPcreateModel(CSIP_MODEL** modelptr)
 CSIP_RETCODE CSIPfreeModel(CSIP_MODEL* model)
 {
    int i;
-   CSIP_RETCODE retcode;
 
    //SCIP_CALL( SCIPfreePtrarray(model->scip, &model->conss) );
    //SCIP_CALL( SCIPfreePtrarray(model->scip, &model->vars) );
@@ -186,6 +184,8 @@ CSIP_RETCODE CSIPchgVarLB(CSIP_MODEL* model, int numindices, int *indices, doubl
       var = model->vars[indices[i]];
       SCIP_CALL( SCIPchgVarLb(scip, var, lowerbounds[i]) );
    }
+
+   return CSIP_RETCODE_OK;
 }
 
 CSIP_RETCODE CSIPchgVarUB(CSIP_MODEL* model, int numindices, int *indices, double *upperbounds)
@@ -380,7 +380,6 @@ struct SCIP_ConshdlrData
 
 SCIP_DECL_CONSENFOLP(consEnfolpLazy)
 {
-   int nconsadded;
    SCIP_CONSHDLRDATA* conshdlrdata;
 
    *result = SCIP_FEASIBLE;
