@@ -84,7 +84,8 @@ void test_mip() {
 
     int var_idx;
     for (int i = 0; i < 5; i++) {
-        status = CSIPaddVar(m, -INFINITY, INFINITY, CSIP_VARTYPE_BINARY, &var_idx);
+        //status = CSIPaddVar(m, -INFINITY, INFINITY, CSIP_VARTYPE_BINARY, &var_idx);
+        status = CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_BINARY, &var_idx);
         assert(var_idx == i);
     }
 
