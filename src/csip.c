@@ -118,10 +118,19 @@ CSIP_RETCODE CSIPcreateModel(CSIP_MODEL** modelptr)
 
 CSIP_RETCODE CSIPfreeModel(CSIP_MODEL* model)
 {
+   int i;
    CSIP_RETCODE retcode;
 
    //SCIP_CALL( SCIPfreePtrarray(model->scip, &model->conss) );
    //SCIP_CALL( SCIPfreePtrarray(model->scip, &model->vars) );
+   for( i = 0; i < model->nvars; ++i )
+   {
+      SCIP_CALL( SCIPreleaseVar(model->scip, &model->vars[i]) );
+   }
+   for( i = 0; i < model->nconss; ++i )
+   {
+      SCIP_CALL( SCIPreleaseCons(model->scip, &model->conss[i]) );
+   }
    SCIP_CALL( SCIPfree(&model->scip) );
 
    free(model);
@@ -137,6 +146,7 @@ CSIP_RETCODE CSIPaddVar(CSIP_MODEL* model, double lowerbound, double upperbound,
    scip = model->scip;
 
    SCIP_CALL( SCIPcreateVarBasic(scip, &var, NULL, lowerbound, upperbound, 0.0, vartype) );
+   SCIP_CALL( SCIPaddVar(scip, var) );
 
    //CSIP_CALL( addPtrarrayVal(scip, model->vars, (void *)var, idx) );
    *idx = model->nvars;
