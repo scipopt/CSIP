@@ -441,6 +441,7 @@ SCIP_DECL_CONSLOCK(consLockLazy)
  * callback methods
  */
 
+/* TODO: we should implement the free callback to release conshdlrdata */
 CSIP_RETCODE CSIPaddLazyCallback(CSIP_MODEL* model, CSIP_LAZYCALLBACK callback, int fractional, void *userdata)
 {
    SCIP_CONSHDLRDATA* conshdlrdata;
