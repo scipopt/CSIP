@@ -46,8 +46,9 @@ all: 		$(CSIPLIBDIR) $(CSIPLIB)
 
 .PHONY: clean
 clean: 
-	@echo "removing $(CSIPLIB)"
+	@echo "removing $(CSIPLIB), $(TESTBIN)"
 	@rm -f $(CSIPLIB)
+	@rm -f $(TESTBIN)
 
 .PHONY: test
 test: 
