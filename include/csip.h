@@ -22,10 +22,10 @@ CSIP_RETCODE CSIPcreateModel(CSIP_MODEL**);
 CSIP_RETCODE CSIPfreeModel(CSIP_MODEL*);
 
 /* variable types */
-#define CSIP_VARTYPE_BINARY 1
-#define CSIP_VARTYPE_INTEGER 2
-#define CSIP_VARTYPE_IMPLINT 3
-#define CSIP_VARTYPE_CONTINUOUS 4
+#define CSIP_VARTYPE_BINARY 0
+#define CSIP_VARTYPE_INTEGER 1
+#define CSIP_VARTYPE_IMPLINT 2
+#define CSIP_VARTYPE_CONTINUOUS 3
 
 
 CSIP_RETCODE CSIPaddVar(CSIP_MODEL*, double lowerbound, double upperbound, int vartype, int *idx);
