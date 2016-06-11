@@ -280,6 +280,13 @@ CSIP_RETCODE lazy_callback(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata) {
     return CSIP_RETCODE_OK;
 }
 
+/* the problem written originally was:
+ *    min 0.5x + y
+ *    s.t. -inf <= x,y <= 2
+ *          x + y <= 3 (lazy)
+ * which is unbounded, and for some scip-bug reason, it asserted some stuff
+ * I am changing to problem to reflect Miles original vision
+ */
 void test_lazy() {
 
     /*
@@ -290,7 +297,7 @@ void test_lazy() {
      */
 
     const int objindices[] = {0,1};
-    const double objcoef[] = {0.5,1.0};
+    const double objcoef[] = {-0.5,-1.0};
     double solution[2];
 
     CSIP_MODEL *m;
@@ -300,11 +307,11 @@ void test_lazy() {
     assert(status == CSIP_RETCODE_OK);
 
     // x
-    status = CSIPaddVar(m, -INFINITY, 2.0, CSIP_VARTYPE_INTEGER, NULL);
+    status = CSIPaddVar(m, 0.0, 2.0, CSIP_VARTYPE_INTEGER, NULL);
     assert(status == CSIP_RETCODE_OK);
 
     // y
-    status = CSIPaddVar(m, -INFINITY, 2.0, CSIP_VARTYPE_INTEGER, NULL);
+    status = CSIPaddVar(m, 0.0, 2.0, CSIP_VARTYPE_INTEGER, NULL);
     assert(status == CSIP_RETCODE_OK);
 
     status = CSIPsetObj(m, 2, objindices, objcoef);
@@ -323,14 +330,15 @@ void test_lazy() {
     int solvestatus = CSIPgetStatus(m);
     assert(solvestatus == CSIP_STATUS_OPTIMAL);
 
-    double objval = CSIPgetObjValue(m);
+    /* the minus is because Miles vision was maximizing */
+    double objval = -CSIPgetObjValue(m);
 
-    assert(fabs(objval - 2) <= 1e-5);
+    assert(fabs(objval - 2.5) <= 1e-5);
 
     status = CSIPgetVarValues(m, solution);
 
-    assert(fabs(solution[0] - 2.0) <= 1e-5);
-    assert(fabs(solution[1] - 1.0) <= 1e-5);
+    assert(fabs(solution[0] - 1.0) <= 1e-5);
+    assert(fabs(solution[1] - 2.0) <= 1e-5);
 
     CSIPfreeModel(m);
 }
