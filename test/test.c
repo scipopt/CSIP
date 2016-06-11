@@ -297,7 +297,7 @@ void test_lazy() {
      */
 
     const int objindices[] = {0,1};
-    const double objcoef[] = {-0.5,-1.0};
+    const double objcoef[] = {0.5,1.0};
     double solution[2];
 
     CSIP_MODEL *m;
@@ -317,7 +317,8 @@ void test_lazy() {
     status = CSIPsetObj(m, 2, objindices, objcoef);
     assert(status == CSIP_RETCODE_OK);
 
-    // TODO: set maximize
+    status = CSIPsetSenseMaximize(m);
+    assert(status == CSIP_RETCODE_OK);
 
     struct MyData userdata = { 10, &solution[0] };
 
@@ -330,8 +331,7 @@ void test_lazy() {
     int solvestatus = CSIPgetStatus(m);
     assert(solvestatus == CSIP_STATUS_OPTIMAL);
 
-    /* the minus is because Miles vision was maximizing */
-    double objval = -CSIPgetObjValue(m);
+    double objval = CSIPgetObjValue(m);
 
     assert(fabs(objval - 2.5) <= 1e-5);
 
@@ -409,6 +409,52 @@ void test_lazy2() {
     CSIPfreeModel(m);
 }
 
+void test_objsense() {
+    // min/max  x
+    // st.      lb <= x <= ub
+
+    CSIP_MODEL *m;
+    CSIP_RETCODE rc;
+    const int objindices[] = {0};
+    const double objcoef[] = {1.0};
+    const double lb = -2.3;
+    const double ub =  4.2;
+    double solution[1];
+
+    rc = CSIPcreateModel(&m);
+    assert(rc == CSIP_RETCODE_OK);
+
+    rc = CSIPaddVar(m, lb, ub, CSIP_VARTYPE_CONTINUOUS, NULL);
+    assert(rc == CSIP_RETCODE_OK);
+
+    rc = CSIPsetObj(m, 1, objindices, objcoef);
+    assert(rc == CSIP_RETCODE_OK);
+
+    // default sense is 'minimize'
+    rc = CSIPsolve(m);
+    assert(rc == CSIP_RETCODE_OK);
+    assert(CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
+    assert(fabs(CSIPgetObjValue(m) - lb) <= 1e-5);
+
+    // change sense to 'maximize'
+    rc = CSIPsetSenseMaximize(m);
+    assert(rc == CSIP_RETCODE_OK);
+    rc = CSIPsolve(m);
+    assert(rc == CSIP_RETCODE_OK);
+    assert(CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
+    assert(fabs(CSIPgetObjValue(m) - ub) <= 1e-5);
+
+    // change sense to 'minimize'
+    rc = CSIPsetSenseMinimize(m);
+    assert(rc == CSIP_RETCODE_OK);
+    rc = CSIPsolve(m);
+    assert(rc == CSIP_RETCODE_OK);
+    assert(CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
+    assert(fabs(CSIPgetObjValue(m) - lb) <= 1e-5);
+
+    CSIPfreeModel(m);
+}
+
 int main() {
 
     // run all the tests
@@ -419,6 +465,7 @@ int main() {
     test_socp();
     test_lazy();
     test_lazy2();
+    test_objsense();
 
     return 0;
 }

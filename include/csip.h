@@ -44,6 +44,8 @@ CSIP_RETCODE CSIPaddSOS1(CSIP_MODEL*, int numindices, int *indices, double *weig
 CSIP_RETCODE CSIPaddSOS2(CSIP_MODEL*, int numindices, int *indices, double *weights, int *idx);
 
 CSIP_RETCODE CSIPsetObj(CSIP_MODEL*, int numindices, int *indices, double *coefs);
+CSIP_RETCODE CSIPsetSenseMinimize(CSIP_MODEL*); // = default sense
+CSIP_RETCODE CSIPsetSenseMaximize(CSIP_MODEL*);
 
 CSIP_RETCODE CSIPsolve(CSIP_MODEL*);
 
