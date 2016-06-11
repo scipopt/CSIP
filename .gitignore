@@ -32,3 +32,4 @@
 *.dSYM/
 *.su
 lib/
+/test/test
