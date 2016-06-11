@@ -20,7 +20,7 @@ CSIPLIBDIR 	= $(CSIPDIR)/lib
 
 CFLAGS 		= -std=c99 -Wall -pedantic
 
-SCIPSRC 	= $(CSIPLIBDIR)/src
+SCIPSRC 	= $(CSIPLIBDIR)/include
 SCIPLIB 	= -lscipopt
 
 FLAGS 		= -I$(SCIPSRC) -I$(CSIPINC)
@@ -64,7 +64,7 @@ links:
 		if test "$$TARGET" != "" ; \
 		then \
 			echo "Creating link: ln -s $$TARGET"; \
-			ln -s $$TARGET; \
+			ln -s $$TARGET include; \
 		else \
 			echo "skipped creation of softlink" ; \
 		fi ; \
@@ -76,7 +76,7 @@ links:
 		if test "$$TARGET" != "" ; \
 		then \
 			echo "Creating link: ln -s $$TARGET"; \
-			ln -s $$TARGET; \
+			ln -s $$TARGET libscipopt.so; \
 		else \
 			echo "skipped creation of softlink" ; \
 		fi ; \
@@ -89,7 +89,7 @@ $(CSIPLIBDIR):
 
 $(CSIPLIB): $(CSIPSRC)
 	gcc $(CFLAGS) $(FLAGS) -c $< $(LFLAGS) $(LINKFLAGS) $(SCIPLIB) -fPIC -o $@
-	@#gcc -I ../../scipoptsuite/scip-3.2.1/src/ -I ../include/ -c csip.c -L../lib -Wl,-rpath=../lib/ -lscipopt -fPIC -o libcsip.so 
+	@#gcc -I $(SCIPSRC) -I ../include/ -c csip.c -L../lib -Wl,-rpath=../lib/ -lscipopt -fPIC -o libcsip.so
 
 $(TESTBIN): $(TESTSRC) $(CSIPLIB)
 	@echo "compiling test"
