@@ -5,25 +5,51 @@
 #include "scip/cons_linear.h"
 #include "scip/cons_quadratic.h"
 
-#undef SCIP_CALL
-#define SCIP_CALL(x)  do{                               \
-                           SCIP_RETCODE _retcode;       \
-                           _retcode = (x);              \
-                           if( _retcode != SCIP_OKAY )  \
-                           {                            \
-                              printf("I am failing with retcode %d in %d\n", _retcode, __LINE__); \
-                              return CSIP_RETCODE_FAIL; \
-                           }                            \
-                        }while(0)
-#define CSIP_CALL(x)  do{                               \
-                           CSIP_RETCODE _retcode;       \
-                           _retcode = (x);              \
-                           if( _retcode != CSIP_RETCODE_OK )  \
-                           {                            \
-                              printf("I am failing with retcode %d in %d\n", _retcode, __LINE__); \
-                              return _retcode; \
-                           }                            \
-                        }while(0)
+// map return codes: SCIP -> CSIP
+static inline int retCodeSCIPtoCSIP(int scipRetCode)
+{
+    switch(scipRetCode)
+    {
+    case SCIP_OKAY:
+        return CSIP_RETCODE_OK;
+    case SCIP_NOMEMORY:
+        return CSIP_RETCODE_NOMEMORY;
+    default: // all the same for us
+        return CSIP_RETCODE_ERROR;
+    }
+}
+
+// map return codes: CSIP -> SCIP
+static inline int retCodeCSIPtoSCIP(int csipRetCode)
+{
+    switch(csipRetCode)
+    {
+    case CSIP_RETCODE_OK:
+        return SCIP_OKAY;
+    case CSIP_RETCODE_NOMEMORY:
+        return SCIP_NOMEMORY;
+    default: // CSIP_RETCODE_ERROR
+        return SCIP_ERROR;
+    }
+}
+
+
+// catch return code within CSIP, like SCIP_CALL defined in SCIP
+#define CSIP_CALL(x)                                                     \
+   do {                                                                  \
+      CSIP_RETCODE _retcode = (x);                                       \
+      if(_retcode != CSIP_RETCODE_OK)                                    \
+      {                                                                  \
+         printf("Failing with retcode %d at %d\n", _retcode, __LINE__);  \
+         return _retcode;                                                \
+      }                                                                  \
+   } while(0)
+
+// catch SCIP return code from CSIP
+#define SCIP_in_CSIP(x) CSIP_CALL( retCodeSCIPtoCSIP(x) )
+
+// catch CSIP return code from SCIP
+#define CSIP_in_SCIP(x) SCIP_CALL( retCodeCSIPtoSCIP(x) )
 
 #define TODO 1000
 
@@ -53,13 +79,13 @@ CSIP_RETCODE createLinCons(CSIP_MODEL* model, int numindices, int *indices, doub
 
    scip = model->scip;
 
-   SCIP_CALL( SCIPcreateConsBasicLinear(scip, cons, "lincons", 0, NULL, NULL, lhs, rhs) );
+   SCIP_in_CSIP( SCIPcreateConsBasicLinear(scip, cons, "lincons", 0, NULL, NULL, lhs, rhs) );
 
    for( i = 0; i < numindices; ++i )
    {
       //var = (SCIP_VAR *)SCIPgetPtrarrayVal(scip, model->vars, indices[i]);
       var = model->vars[indices[i]];
-      SCIP_CALL( SCIPaddCoefLinear(scip, *cons, var, coefs[i]) );
+      SCIP_in_CSIP( SCIPaddCoefLinear(scip, *cons, var, coefs[i]) );
    }
 
    return CSIP_RETCODE_OK;
@@ -72,7 +98,7 @@ CSIP_RETCODE addCons(CSIP_MODEL* model, SCIP_CONS* cons, int* idx)
 
    scip = model->scip;
 
-   SCIP_CALL( SCIPaddCons(scip, cons) );
+   SCIP_in_CSIP( SCIPaddCons(scip, cons) );
 
    //CSIP_CALL( addPtrarrayVal(scip, model->conss, (void *)cons, idx) );
    if( idx != NULL )
@@ -99,7 +125,7 @@ CSIP_RETCODE CSIPcreateModel(CSIP_MODEL** modelptr)
 
    *modelptr = (CSIP_MODEL *)malloc(sizeof(CSIP_MODEL));
    if( *modelptr == NULL )
-      return CSIP_RETCODE_FAIL;
+      return CSIP_RETCODE_NOMEMORY;
 
    model = *modelptr;
 
@@ -131,13 +157,13 @@ CSIP_RETCODE CSIPfreeModel(CSIP_MODEL* model)
    {
       SCIP_VAR* var;
       var = model->vars[i];
-      SCIP_CALL( SCIPreleaseVar(model->scip, &var) );
+      SCIP_in_CSIP( SCIPreleaseVar(model->scip, &var) );
    }
    for( i = 0; i < model->nconss; ++i )
    {
-      SCIP_CALL( SCIPreleaseCons(model->scip, &model->conss[i]) );
+      SCIP_in_CSIP( SCIPreleaseCons(model->scip, &model->conss[i]) );
    }
-   SCIP_CALL( SCIPfree(&model->scip) );
+   SCIP_in_CSIP( SCIPfree(&model->scip) );
 
    free(model);
 
@@ -151,8 +177,8 @@ CSIP_RETCODE CSIPaddVar(CSIP_MODEL* model, double lowerbound, double upperbound,
 
    scip = model->scip;
 
-   SCIP_CALL( SCIPcreateVarBasic(scip, &var, NULL, lowerbound, upperbound, 0.0, vartype) );
-   SCIP_CALL( SCIPaddVar(scip, var) );
+   SCIP_in_CSIP( SCIPcreateVarBasic(scip, &var, NULL, lowerbound, upperbound, 0.0, vartype) );
+   SCIP_in_CSIP( SCIPaddVar(scip, var) );
 
    //CSIP_CALL( addPtrarrayVal(scip, model->vars, (void *)var, idx) );
 
@@ -182,7 +208,7 @@ CSIP_RETCODE CSIPchgVarLB(CSIP_MODEL* model, int numindices, int *indices, doubl
    {
       //var = (SCIP_VAR *)SCIPgetPtrarrayVal(scip, model->vars, indices[i]);
       var = model->vars[indices[i]];
-      SCIP_CALL( SCIPchgVarLb(scip, var, lowerbounds[i]) );
+      SCIP_in_CSIP( SCIPchgVarLb(scip, var, lowerbounds[i]) );
    }
 
    return CSIP_RETCODE_OK;
@@ -200,7 +226,7 @@ CSIP_RETCODE CSIPchgVarUB(CSIP_MODEL* model, int numindices, int *indices, doubl
    {
       //var = (SCIP_VAR *)SCIPgetPtrarrayVal(scip, model->vars, indices[i]);
       var = model->vars[indices[i]];
-      SCIP_CALL( SCIPchgVarUb(scip, var, upperbounds[i]) );
+      SCIP_in_CSIP( SCIPchgVarUb(scip, var, upperbounds[i]) );
    }
 
    return CSIP_RETCODE_OK;
@@ -231,13 +257,13 @@ CSIP_RETCODE CSIPaddQuadCons(CSIP_MODEL* model, int numlinindices, int *linindic
 
    scip = model->scip;
 
-   SCIP_CALL( SCIPcreateConsBasicQuadratic(scip, &cons, "quadcons", 0, NULL, NULL, 0, NULL, NULL, NULL, lhs, rhs) );
+   SCIP_in_CSIP( SCIPcreateConsBasicQuadratic(scip, &cons, "quadcons", 0, NULL, NULL, 0, NULL, NULL, NULL, lhs, rhs) );
 
    for( i = 0; i < numlinindices; ++i )
    {
       //linvar = (SCIP_VAR *)SCIPgetPtrarrayVal(scip, model->vars, linindices[i]);
       linvar = model->vars[linindices[i]];
-      SCIP_CALL( SCIPaddLinearVarQuadratic(scip, cons, linvar, lincoefs[i]) );
+      SCIP_in_CSIP( SCIPaddLinearVarQuadratic(scip, cons, linvar, lincoefs[i]) );
    }
 
    for( i = 0; i < numquadterms; ++i )
@@ -247,7 +273,7 @@ CSIP_RETCODE CSIPaddQuadCons(CSIP_MODEL* model, int numlinindices, int *linindic
       //var2 = (SCIP_VAR *)SCIPgetPtrarrayVal(scip, model->vars, quadcolindices[i]);
       var2 = model->vars[quadcolindices[i]];
 
-      SCIP_CALL( SCIPaddBilinTermQuadratic(scip, cons, var1, var2, quadcoefs[i]) );
+      SCIP_in_CSIP( SCIPaddBilinTermQuadratic(scip, cons, var1, var2, quadcoefs[i]) );
    }
 
    CSIP_CALL( addCons(model, cons, idx) );
@@ -279,7 +305,7 @@ CSIP_RETCODE CSIPsetObj(CSIP_MODEL* model, int numindices, int *indices, double 
    {
       //var = (SCIP_VAR *)SCIPgetPtrarrayVal(scip, model->vars, indices[i]);
       var = model->vars[indices[i]];
-      SCIP_CALL( SCIPchgVarObj(scip, var, coefs[i]) );
+      SCIP_in_CSIP( SCIPchgVarObj(scip, var, coefs[i]) );
    }
 
    return CSIP_RETCODE_OK;
@@ -287,7 +313,7 @@ CSIP_RETCODE CSIPsetObj(CSIP_MODEL* model, int numindices, int *indices, double 
 
 CSIP_RETCODE CSIPsolve(CSIP_MODEL* model)
 {
-   SCIP_CALL( SCIPsolve(model->scip) );
+   SCIP_in_CSIP( SCIPsolve(model->scip) );
 
    return CSIP_RETCODE_OK;
 }
@@ -311,7 +337,7 @@ CSIP_RETCODE CSIPgetVarValues(CSIP_MODEL* model, double *output)
    scip = model->scip;
 
    if( SCIPgetBestSol(scip) == NULL )
-      return CSIP_RETCODE_FAIL;
+      return CSIP_RETCODE_ERROR;
 
    for( i = 0; i < model->nvars; ++i )
    {
@@ -388,8 +414,8 @@ SCIP_DECL_CONSENFOLP(consEnfolpLazy)
    conshdlrdata->checkonly = FALSE;
    conshdlrdata->feasible = TRUE;
 
-   /* TODO FIXME macros and return code !!!!!!! */
-   conshdlrdata->callback(conshdlrdata->model, conshdlrdata, conshdlrdata->userdata);
+   CSIP_in_SCIP( conshdlrdata->callback(conshdlrdata->model,
+                                        conshdlrdata, conshdlrdata->userdata) );
 
    if( !conshdlrdata->feasible )
       *result = SCIP_CONSADDED;
@@ -415,7 +441,8 @@ SCIP_DECL_CONSCHECK(consCheckLazy)
    conshdlrdata->feasible = TRUE;
    conshdlrdata->sol = sol;
 
-   CSIP_CALL( conshdlrdata->callback(conshdlrdata->model, conshdlrdata, conshdlrdata->userdata) );
+   CSIP_in_SCIP( conshdlrdata->callback(conshdlrdata->model,
+                                        conshdlrdata, conshdlrdata->userdata) );
 
    if( !conshdlrdata->feasible )
       *result = SCIP_INFEASIBLE;
@@ -462,7 +489,7 @@ CSIP_RETCODE CSIPaddLazyCallback(CSIP_MODEL* model, CSIP_LAZYCALLBACK callback, 
    /* it is -1 or 1 because cons_integral has priority 0 */
    priority = fractional ? -1 : 1;
 
-   SCIP_CALL( SCIPallocMemory(scip, &conshdlrdata) );
+   SCIP_in_CSIP( SCIPallocMemory(scip, &conshdlrdata) );
 
    conshdlrdata->model = model;
    conshdlrdata->callback = callback;
@@ -470,10 +497,11 @@ CSIP_RETCODE CSIPaddLazyCallback(CSIP_MODEL* model, CSIP_LAZYCALLBACK callback, 
 
    //SCIPsnprintf(name, SCIP_MAXSTRLEN, "lazycons_%d", model->nlazyconss);
    SCIPsnprintf(name, SCIP_MAXSTRLEN, "lazycons_");
-   SCIP_CALL( SCIPincludeConshdlrBasic(scip, &conshdlr, name, "lazy constraint callback",
-         priority, -1, -1, FALSE,
-         consEnfolpLazy, consEnfopsLazy, consCheckLazy, consLockLazy,
-         conshdlrdata) );
+   SCIP_in_CSIP( SCIPincludeConshdlrBasic(
+                    scip, &conshdlr, name, "lazy constraint callback",
+                    priority, -1, -1, FALSE,
+                    consEnfolpLazy, consEnfopsLazy, consCheckLazy, consLockLazy,
+                    conshdlrdata) );
 
    return CSIP_RETCODE_OK;
 }
@@ -532,7 +560,7 @@ CSIP_RETCODE CSIPcbAddLinCons(CSIP_CBDATA* cbdata, int numindices, int *indices,
    }
 
    CSIP_CALL( createLinCons(cbdata->model, numindices, indices, coefs, lhs, rhs, &cons) );
-   SCIP_CALL( SCIPcheckCons(scip, cons, sol, FALSE, FALSE, FALSE, &result) );
+   SCIP_in_CSIP( SCIPcheckCons(scip, cons, sol, FALSE, FALSE, FALSE, &result) );
 
    if( result == SCIP_INFEASIBLE )
    {
@@ -546,7 +574,7 @@ CSIP_RETCODE CSIPcbAddLinCons(CSIP_CBDATA* cbdata, int numindices, int *indices,
    else
    {
       /* since we are not adding the cons, we need to release it now */
-      SCIP_CALL( SCIPreleaseCons(cbdata->model->scip, &cons) );
+      SCIP_in_CSIP( SCIPreleaseCons(cbdata->model->scip, &cons) );
    }
 
    return CSIP_RETCODE_OK;

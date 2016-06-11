@@ -5,7 +5,8 @@ typedef int CSIP_STATUS;
 
 /* return codes */
 #define CSIP_RETCODE_OK 0
-#define CSIP_RETCODE_FAIL 1
+#define CSIP_RETCODE_ERROR 1
+#define CSIP_RETCODE_NOMEMORY 2
 
 /* solver status */
 #define CSIP_STATUS_OPTIMAL 0
