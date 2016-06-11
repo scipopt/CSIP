@@ -123,9 +123,17 @@ CSIP_RETCODE CSIPfreeModel(CSIP_MODEL* model)
 
    //SCIP_CALL( SCIPfreePtrarray(model->scip, &model->conss) );
    //SCIP_CALL( SCIPfreePtrarray(model->scip, &model->vars) );
+   /* SCIPreleaseVar sets the given pointer to NULL. However, this pointer is
+    * needed when SCIPfree is called, because it will call the lock method again
+    * which works on the vars stored at model, so we give another pointer
+    * TODO: maybe this is still wrong and one should free the transformed problem
+    * first and then release the vars... we have to check for BMS memory leaks
+    */
    for( i = 0; i < model->nvars; ++i )
    {
-      SCIP_CALL( SCIPreleaseVar(model->scip, &model->vars[i]) );
+      SCIP_VAR* var;
+      var = model->vars[i];
+      SCIP_CALL( SCIPreleaseVar(model->scip, &var) );
    }
    for( i = 0; i < model->nconss; ++i )
    {
@@ -510,8 +518,21 @@ CSIP_RETCODE CSIPcbAddLinCons(CSIP_CBDATA* cbdata, int numindices, int *indices,
    else
       sol = NULL;
 
-   CSIP_CALL( createLinCons(cbdata->model, numindices, indices, coefs, lhs, rhs, &cons) );
+   /* Is it reasonable to assume that if we solved the problem, then the lazy constraint
+    * is satisfied in the original problem? We get the error:
+    * "method <SCIPcreateCons> cannot be called in the solved stage"
+    * and I am guessing this is because SCIP is checking whether the solution found in the
+    * presolved problem is feasible for the original problem. It could happen it is not feasible
+    * because of numerics mainly, hence the question in the comment
+    */
+   if( SCIPgetStage(scip) == SCIP_STAGE_SOLVED )
+   {
+      assert(cbdata->checkonly);
+      cbdata->feasible = TRUE; /* to be very explicit */
+      return CSIP_RETCODE_OK;
+   }
 
+   CSIP_CALL( createLinCons(cbdata->model, numindices, indices, coefs, lhs, rhs, &cons) );
    SCIP_CALL( SCIPcheckCons(scip, cons, sol, FALSE, FALSE, FALSE, &result) );
 
    if( result == SCIP_INFEASIBLE )
@@ -522,6 +543,11 @@ CSIP_RETCODE CSIPcbAddLinCons(CSIP_CBDATA* cbdata, int numindices, int *indices,
    if( !cbdata->checkonly )
    {
       CSIP_CALL( addCons(cbdata->model, cons, NULL) );
+   }
+   else
+   {
+      /* since we are not adding the cons, we need to release it now */
+      SCIP_CALL( SCIPreleaseCons(cbdata->model->scip, &cons) );
    }
 
    return CSIP_RETCODE_OK;
