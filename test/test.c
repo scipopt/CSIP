@@ -285,7 +285,7 @@ CSIP_RETCODE lazy_callback(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata) {
  *    s.t. -inf <= x,y <= 2
  *          x + y <= 3 (lazy)
  * which is unbounded, and for some scip-bug reason, it asserted some stuff
- * I am changing to problem to reflect Miles original vision
+ * I am changing the problem to reflect Miles original vision
  */
 void test_lazy() {
 
@@ -346,13 +346,13 @@ void test_lazy() {
 CSIP_RETCODE lazy_callback2(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata) {
 
     struct MyData *data = (struct MyData*) userdata;
-    assert(data->foo == 11);
+    assert(data->foo == 10);
     const int indices[] = {0};
     const double coef[] = {1.0};
 
     CSIPcbGetVarValues(cb, data->storage);
     // make sure we didn't get a fractional solution
-    assert(data->storage[0] - floor(data->storage[0]) < 1e-4);
+    assert(data->storage[0] - round(data->storage[0]) < 1e-4);
 
     // always add the cut x <= 10
     CSIPcbAddLinCons(cb, 1, indices, coef, -INFINITY, 10.5, 0);
