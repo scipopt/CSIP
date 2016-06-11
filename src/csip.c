@@ -423,6 +423,8 @@ SCIP_DECL_CONSLOCK(consLockLazy)
    SCIP_VAR* var;
    SCIP_CONSHDLRDATA* conshdlrdata;
 
+   conshdlrdata = SCIPconshdlrGetData(conshdlr);
+
    assert(scip == conshdlrdata->model->scip);
 
    for( i = 0; i < conshdlrdata->model->nvars; ++i )
