@@ -65,10 +65,6 @@ struct csip_model
 /*
  * local methods
  */
-//static
-//CSIP_RETCODE addPtrarrayVal(SCIP* scip, SCIP_PTRARRAY* ptrarray, void* val)
-//{
-//}
 
 static
 CSIP_RETCODE createLinCons(CSIP_MODEL* model, int numindices, int *indices, double *coefs, double lhs, double rhs, SCIP_CONS** cons)
@@ -83,7 +79,6 @@ CSIP_RETCODE createLinCons(CSIP_MODEL* model, int numindices, int *indices, doub
 
    for( i = 0; i < numindices; ++i )
    {
-      //var = (SCIP_VAR *)SCIPgetPtrarrayVal(scip, model->vars, indices[i]);
       var = model->vars[indices[i]];
       SCIP_in_CSIP( SCIPaddCoefLinear(scip, *cons, var, coefs[i]) );
    }
@@ -100,7 +95,6 @@ CSIP_RETCODE addCons(CSIP_MODEL* model, SCIP_CONS* cons, int* idx)
 
    SCIP_in_CSIP( SCIPaddCons(scip, cons) );
 
-   //CSIP_CALL( addPtrarrayVal(scip, model->conss, (void *)cons, idx) );
    if( idx != NULL )
    {
       *idx = model->nconss;
@@ -132,8 +126,6 @@ CSIP_RETCODE CSIPcreateModel(CSIP_MODEL** modelptr)
    SCIP_CALL( SCIPcreate(&model->scip) );
    SCIP_CALL( SCIPincludeDefaultPlugins(model->scip) );
    SCIP_CALL( SCIPcreateProbBasic(model->scip, "name") );
-   //SCIP_CALL( SCIPcreatePtrarray(model->scip, &model->vars) );
-   //SCIP_CALL( SCIPcreatePtrarray(model->scip, &model->conss) );
 
    model->nvars = 0;
    model->nconss = 0;
@@ -145,8 +137,6 @@ CSIP_RETCODE CSIPfreeModel(CSIP_MODEL* model)
 {
    int i;
 
-   //SCIP_CALL( SCIPfreePtrarray(model->scip, &model->conss) );
-   //SCIP_CALL( SCIPfreePtrarray(model->scip, &model->vars) );
    /* SCIPreleaseVar sets the given pointer to NULL. However, this pointer is
     * needed when SCIPfree is called, because it will call the lock method again
     * which works on the vars stored at model, so we give another pointer
@@ -180,8 +170,6 @@ CSIP_RETCODE CSIPaddVar(CSIP_MODEL* model, double lowerbound, double upperbound,
    SCIP_in_CSIP( SCIPcreateVarBasic(scip, &var, NULL, lowerbound, upperbound, 0.0, vartype) );
    SCIP_in_CSIP( SCIPaddVar(scip, var) );
 
-   //CSIP_CALL( addPtrarrayVal(scip, model->vars, (void *)var, idx) );
-
    if( idx != NULL )
    {
       *idx = model->nvars;
@@ -206,7 +194,6 @@ CSIP_RETCODE CSIPchgVarLB(CSIP_MODEL* model, int numindices, int *indices, doubl
 
    for( i = 0; i < numindices; ++i )
    {
-      //var = (SCIP_VAR *)SCIPgetPtrarrayVal(scip, model->vars, indices[i]);
       var = model->vars[indices[i]];
       SCIP_in_CSIP( SCIPchgVarLb(scip, var, lowerbounds[i]) );
    }
@@ -224,7 +211,6 @@ CSIP_RETCODE CSIPchgVarUB(CSIP_MODEL* model, int numindices, int *indices, doubl
 
    for( i = 0; i < numindices; ++i )
    {
-      //var = (SCIP_VAR *)SCIPgetPtrarrayVal(scip, model->vars, indices[i]);
       var = model->vars[indices[i]];
       SCIP_in_CSIP( SCIPchgVarUb(scip, var, upperbounds[i]) );
    }
@@ -237,7 +223,6 @@ CSIP_RETCODE CSIPaddLinCons(CSIP_MODEL* model, int numindices, int *indices, dou
    SCIP_CONS* cons;
 
    CSIP_CALL( createLinCons(model, numindices, indices, coefs, lhs, rhs, &cons) );
-
    CSIP_CALL( addCons(model, cons, idx) );
 
    return CSIP_RETCODE_OK;
@@ -261,18 +246,14 @@ CSIP_RETCODE CSIPaddQuadCons(CSIP_MODEL* model, int numlinindices, int *linindic
 
    for( i = 0; i < numlinindices; ++i )
    {
-      //linvar = (SCIP_VAR *)SCIPgetPtrarrayVal(scip, model->vars, linindices[i]);
       linvar = model->vars[linindices[i]];
       SCIP_in_CSIP( SCIPaddLinearVarQuadratic(scip, cons, linvar, lincoefs[i]) );
    }
 
    for( i = 0; i < numquadterms; ++i )
    {
-      //var1 = (SCIP_VAR *)SCIPgetPtrarrayVal(scip, model->vars, quadrowindices[i]);
       var1 = model->vars[quadrowindices[i]];
-      //var2 = (SCIP_VAR *)SCIPgetPtrarrayVal(scip, model->vars, quadcolindices[i]);
       var2 = model->vars[quadcolindices[i]];
-
       SCIP_in_CSIP( SCIPaddBilinTermQuadratic(scip, cons, var1, var2, quadcoefs[i]) );
    }
 
@@ -303,7 +284,6 @@ CSIP_RETCODE CSIPsetObj(CSIP_MODEL* model, int numindices, int *indices, double 
 
    for( i = 0; i < numindices; ++i )
    {
-      //var = (SCIP_VAR *)SCIPgetPtrarrayVal(scip, model->vars, indices[i]);
       var = model->vars[indices[i]];
       SCIP_in_CSIP( SCIPchgVarObj(scip, var, coefs[i]) );
    }
@@ -341,7 +321,6 @@ CSIP_RETCODE CSIPgetVarValues(CSIP_MODEL* model, double *output)
 
    for( i = 0; i < model->nvars; ++i )
    {
-      //var = (SCIP_VAR *)SCIPgetPtrarrayVal(scip, model->vars, indices[i]);
       var = model->vars[i];
       output[i] = SCIPgetSolVal(scip, SCIPgetBestSol(scip), var);
    }
@@ -398,8 +377,6 @@ struct SCIP_ConshdlrData
    SCIP_Bool checkonly;
    SCIP_Bool feasible;
    SCIP_SOL* sol;
-
-   //CSIP_CBDATA* cbdata;
 };
 
 
@@ -463,7 +440,6 @@ SCIP_DECL_CONSLOCK(consLockLazy)
 
    for( i = 0; i < conshdlrdata->model->nvars; ++i )
    {
-      //var = (SCIP_VAR *)SCIPgetPtrarrayVal(scip, model->vars, indices[i]);
       var = conshdlrdata->model->vars[i];
       SCIP_CALL( SCIPaddVarLocks(scip, var, nlockspos + nlocksneg, nlockspos + nlocksneg) );
    }
@@ -495,7 +471,6 @@ CSIP_RETCODE CSIPaddLazyCallback(CSIP_MODEL* model, CSIP_LAZYCALLBACK callback, 
    conshdlrdata->callback = callback;
    conshdlrdata->userdata = userdata;
 
-   //SCIPsnprintf(name, SCIP_MAXSTRLEN, "lazycons_%d", model->nlazyconss);
    SCIPsnprintf(name, SCIP_MAXSTRLEN, "lazycons_");
    SCIP_in_CSIP( SCIPincludeConshdlrBasic(
                     scip, &conshdlr, name, "lazy constraint callback",
@@ -523,7 +498,6 @@ CSIP_RETCODE CSIPcbGetVarValues(CSIP_CBDATA* cbdata, double *output)
 
    for( i = 0; i < cbdata->model->nvars; ++i )
    {
-      //var = (SCIP_VAR *)SCIPgetPtrarrayVal(scip, model->vars, indices[i]);
       var = cbdata->model->vars[i];
       output[i] = SCIPgetSolVal(scip, sol, var);
    }
@@ -579,4 +553,3 @@ CSIP_RETCODE CSIPcbAddLinCons(CSIP_CBDATA* cbdata, int numindices, int *indices,
 
    return CSIP_RETCODE_OK;
 }
-

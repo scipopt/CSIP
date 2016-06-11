@@ -1,4 +1,3 @@
-
 typedef struct csip_model CSIP_MODEL;
 typedef int CSIP_RETCODE;
 typedef int CSIP_STATUS;
