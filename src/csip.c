@@ -149,9 +149,16 @@ CSIP_RETCODE CSIPaddVar(CSIP_MODEL* model, double lowerbound, double upperbound,
    SCIP_CALL( SCIPaddVar(scip, var) );
 
    //CSIP_CALL( addPtrarrayVal(scip, model->vars, (void *)var, idx) );
-   *idx = model->nvars;
-   model->vars[*idx] = var;
 
+   if( idx != NULL )
+   {
+      *idx = model->nvars;
+      model->vars[*idx] = var;
+   }
+   else
+   {
+      model->vars[model->nvars] = var;
+   }
    ++(model->nvars);
 
    return CSIP_RETCODE_OK;
