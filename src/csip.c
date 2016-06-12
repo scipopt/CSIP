@@ -123,9 +123,9 @@ CSIP_RETCODE CSIPcreateModel(CSIP_MODEL** modelptr)
 
    model = *modelptr;
 
-   SCIP_CALL( SCIPcreate(&model->scip) );
-   SCIP_CALL( SCIPincludeDefaultPlugins(model->scip) );
-   SCIP_CALL( SCIPcreateProbBasic(model->scip, "name") );
+   SCIP_in_CSIP( SCIPcreate(&model->scip) );
+   SCIP_in_CSIP( SCIPincludeDefaultPlugins(model->scip) );
+   SCIP_in_CSIP( SCIPcreateProbBasic(model->scip, "name") );
 
    model->nvars = 0;
    model->nconss = 0;
