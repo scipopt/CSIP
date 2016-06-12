@@ -293,12 +293,6 @@ CSIP_RETCODE CSIPsetObj(CSIP_MODEL* model, int numindices, int *indices, double 
 
 CSIP_RETCODE CSIPsetSenseMinimize(CSIP_MODEL* model)
 {
-   // TODO: Is this the proper way to get back to the proper stage? We
-   //       want to be able to change the problem and resolve now. But
-   //       if we call SCIPfreeTransform after SCIPsolve, the results
-   //       will be gone.
-   SCIP_in_CSIP( SCIPfreeTransform(model->scip));
-
    SCIP_in_CSIP( SCIPsetObjsense(model->scip, SCIP_OBJSENSE_MINIMIZE) );
 
    return CSIP_RETCODE_OK;
@@ -306,9 +300,6 @@ CSIP_RETCODE CSIPsetSenseMinimize(CSIP_MODEL* model)
 
 CSIP_RETCODE CSIPsetSenseMaximize(CSIP_MODEL* model)
 {
-   // TODO: Is this the proper way to get back to the proper stage?
-   SCIP_in_CSIP( SCIPfreeTransform(model->scip));
-
    SCIP_in_CSIP( SCIPsetObjsense(model->scip, SCIP_OBJSENSE_MAXIMIZE) );
 
    return CSIP_RETCODE_OK;
@@ -317,6 +308,11 @@ CSIP_RETCODE CSIPsetSenseMaximize(CSIP_MODEL* model)
 CSIP_RETCODE CSIPsolve(CSIP_MODEL* model)
 {
    SCIP_in_CSIP( SCIPsolve(model->scip) );
+
+   // We immediatly free the transformed problem to get out of the
+   // "solved stage", so that the user may modify the problem (and
+   // resolve) later.
+   SCIP_in_CSIP( SCIPfreeTransform(model->scip));
 
    return CSIP_RETCODE_OK;
 }
