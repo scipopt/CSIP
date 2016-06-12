@@ -128,6 +128,8 @@ CSIP_RETCODE CSIPcreateModel(CSIP_MODEL** modelptr)
    model->nvars = 0;
    model->nconss = 0;
 
+   CSIP_CALL( CSIPsetParameter(model, "display/width", 80) );
+
    return CSIP_RETCODE_OK;
 }
 
