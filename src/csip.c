@@ -2,8 +2,6 @@
 #include "scip/scip.h"
 #include "scip/pub_misc.h"
 #include "scip/scipdefplugins.h"
-#include "scip/cons_linear.h"
-#include "scip/cons_quadratic.h"
 
 // map return codes: SCIP -> CSIP
 static inline int retCodeSCIPtoCSIP(int scipRetCode)
@@ -262,15 +260,51 @@ CSIP_RETCODE CSIPaddQuadCons(CSIP_MODEL* model, int numlinindices, int *linindic
    return CSIP_RETCODE_OK;
 }
 
-/* TODO */
-CSIP_RETCODE CSIPaddSOS1(CSIP_MODEL* model, int numindices, int *indices, double *weights, int* idx)
+CSIP_RETCODE CSIPaddSOS1(
+   CSIP_MODEL* model, int numindices, int *indices, double *weights, int* idx)
 {
+   SCIP *scip = model->scip;
+   SCIP_CONS *cons;
+   SCIP_VAR **vars = (SCIP_VAR **) malloc(numindices * sizeof(SCIP_VAR*));
+   if(vars == NULL)
+   {
+      return CSIP_RETCODE_NOMEMORY;
+   }
+   for(int i = 0; i < numindices; ++i)
+   {
+      vars[i] = model->vars[indices[i]];
+   }
+
+   SCIP_in_CSIP( SCIPcreateConsBasicSOS1(
+                    scip, &cons, "sos1", numindices, vars, weights) );
+   CSIP_CALL( addCons(model, cons, idx) );
+
+   free(vars);
+
    return CSIP_RETCODE_OK;
 }
 
-/* TODO */
-CSIP_RETCODE CSIPaddSOS2(CSIP_MODEL* model, int numindices, int *indices, double *weights, int* idx)
+CSIP_RETCODE CSIPaddSOS2(
+   CSIP_MODEL* model, int numindices, int *indices, double *weights, int* idx)
 {
+   SCIP *scip = model->scip;
+   SCIP_CONS *cons;
+   SCIP_VAR **vars = (SCIP_VAR **) malloc(numindices * sizeof(SCIP_VAR*));
+   if(vars == NULL)
+   {
+      return CSIP_RETCODE_NOMEMORY;
+   }
+   for(int i = 0; i < numindices; ++i)
+   {
+      vars[i] = model->vars[indices[i]];
+   }
+
+   SCIP_in_CSIP( SCIPcreateConsBasicSOS2(
+                    scip, &cons, "sos2", numindices, vars, weights) );
+   CSIP_CALL( addCons(model, cons, idx) );
+
+   free(vars);
+
    return CSIP_RETCODE_OK;
 }
 

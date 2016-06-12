@@ -5,6 +5,7 @@
 
 #define const  
 
+#define CHECK(x) assert((x) == CSIP_RETCODE_OK)
 
 void test_lp() {
 
@@ -455,6 +456,83 @@ void test_objsense() {
     CSIPfreeModel(m);
 }
 
+void test_sos1() {
+    // max 2x + 3y + 4z
+    //     SOS1(x, y, z)
+    //     0 <= x, y, z <= 1
+    //
+    // sol -> (0, 0, 1)
+
+    CSIP_MODEL *m;
+    int objindices[] = {0, 1, 2};
+    double objcoef[] = {2.0, 3.0, 4.0};
+    double solution[3];
+
+    CHECK( CSIPcreateModel(&m) );
+    CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL) ); // x
+    CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL) ); // y
+    CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL) ); // z
+    CHECK( CSIPaddSOS1(m, 3, objindices, NULL, NULL) );
+    CHECK( CSIPsetSenseMaximize(m) );
+    CHECK( CSIPsetObj(m, 3, objindices, objcoef) );
+    CHECK( CSIPsolve(m) );
+    assert(CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
+    assert(fabs(CSIPgetObjValue(m) - 4.0) <= 1e-5);
+    CHECK( CSIPfreeModel(m) );
+}
+
+void test_sos2() {
+    // max 2x + 3y + 4z
+    //     SOS2(x, y, z)
+    //     0 <= x, y, z <= 1
+    //
+    // sol -> (0, 1, 1)
+
+    CSIP_MODEL *m;
+    int objindices[] = {0, 1, 2};
+    double objcoef[] = {2.0, 3.0, 4.0};
+    double solution[3];
+
+    CHECK( CSIPcreateModel(&m) );
+    CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL) ); // x
+    CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL) ); // y
+    CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL) ); // z
+    CHECK( CSIPaddSOS2(m, 3, objindices, NULL, NULL) );
+    CHECK( CSIPsetSenseMaximize(m) );
+    CHECK( CSIPsetObj(m, 3, objindices, objcoef) );
+    CHECK( CSIPsolve(m) );
+    assert(CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
+    assert(fabs(CSIPgetObjValue(m) - 7.0) <= 1e-5);
+    CHECK( CSIPfreeModel(m) );
+}
+
+void test_sos1_sos2() {
+    // max 2x + 3y + 4z
+    //     SOS1(y, z)
+    //     SOS2(x, y, z)
+    //     0 <= x, y, z <= 1
+    //
+    // sol -> (1, 0, 0)
+
+    CSIP_MODEL *m;
+    int objindices[] = {0, 1, 2};
+    double objcoef[] = {2.0, 3.0, 4.0};
+    double solution[3];
+
+    CHECK( CSIPcreateModel(&m) );
+    CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL) ); // x
+    CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL) ); // y
+    CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL) ); // z
+    CHECK( CSIPaddSOS1(m, 2, objindices + 1, NULL, NULL) );
+    CHECK( CSIPaddSOS2(m, 3, objindices, NULL, NULL) );
+    CHECK( CSIPsetSenseMaximize(m) );
+    CHECK( CSIPsetObj(m, 3, objindices, objcoef) );
+    CHECK( CSIPsolve(m) );
+    assert(CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
+    assert(fabs(CSIPgetObjValue(m) - 5.0) <= 1e-5);
+    CHECK( CSIPfreeModel(m) );
+}
+
 int main() {
 
     // run all the tests
@@ -466,6 +544,9 @@ int main() {
     test_lazy();
     test_lazy2();
     test_objsense();
+    test_sos1();
+    test_sos2();
+    test_sos1_sos2();
 
     return 0;
 }

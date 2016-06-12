@@ -61,17 +61,24 @@ CSIP_RETCODE CSIPaddLinCons(
 //           + sum_j quadcoefs[j] * vars[row[j]] * vars[col[j]] <= rhs
 // For one-sided inequalities, use (-)INFINITY for lhs or rhs.
 // The constraint index will be assigned to idx; pass NULL if not needed.
-
 CSIP_RETCODE CSIPaddQuadCons(
     CSIP_MODEL* model, int numlinindices, int *linindices, double *lincoefs,
     int numquadterms, int *quadrowindices, int *quadcolindices,
     double *quadcoefs, double lhs, double rhs, int *idx);
 
-// TODO: Not implemented yet!
+// Add SOS1 (special ordered set of type 1) constraint on a set of
+// variables. That is, at most one variable is allowed to take on a
+// nonzero value.
+// Use weights to determine variable order, or NULL.
+// The constraint index will be assigned to idx; pass NULL if not needed.
 CSIP_RETCODE CSIPaddSOS1(
     CSIP_MODEL* model, int numindices, int *indices, double *weights, int *idx);
 
-// TODO: Not implemented yet!
+// Add SOS2 (special ordered set of type 2) constraint on a set of
+// variables. That is, at most two consecutive variables are allowed
+// to take on nonzero values.
+// Use weights to determine variable order, or NULL.
+// The constraint index will be assigned to idx; pass NULL if not needed.
 CSIP_RETCODE CSIPaddSOS2(
     CSIP_MODEL* model, int numindices, int *indices, double *weights, int *idx);
 
