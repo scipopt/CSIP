@@ -328,7 +328,13 @@ CSIP_STATUS CSIPgetStatus(CSIP_MODEL* model)
 
 double CSIPgetObjValue(CSIP_MODEL* model)
 {
-   return SCIPgetPrimalbound(model->scip);
+   SCIP_SOL* sol = SCIPgetBestSol(model->scip);
+   if(sol == NULL)
+   {
+      return CSIP_RETCODE_ERROR;
+   }
+
+   return SCIPgetSolOrigObj(model->scip, sol);
 }
 
 CSIP_RETCODE CSIPgetVarValues(CSIP_MODEL* model, double *output)
