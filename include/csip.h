@@ -105,29 +105,9 @@ double CSIPgetObjValue(CSIP_MODEL* model);
 // Get the solving status.
 CSIP_STATUS CSIPgetStatus(CSIP_MODEL* model);
 
-// TODO: Not implemented yet!
-CSIP_RETCODE CSIPsetIntParam(
-    CSIP_MODEL* model, const char *name, int value);
-
-// TODO: Not implemented yet!
-CSIP_RETCODE CSIPsetDoubleParam(
-    CSIP_MODEL* model, const char *name, double value);
-
-// TODO: Not implemented yet!
-CSIP_RETCODE CSIPsetBoolParam(
-    CSIP_MODEL* model, const char *name, int value);
-
-// TODO: Not implemented yet!
-CSIP_RETCODE CSIPsetStringParam(
-    CSIP_MODEL* model, const char *name, const char *value);
-
-// TODO: Not implemented yet!
-CSIP_RETCODE CSIPsetLongIntParam(
-    CSIP_MODEL* model, const char *name, long long value);
-
-// TODO: Not implemented yet!
-CSIP_RETCODE CSIPsetCharParam(
-    CSIP_MODEL* model, const char *name, char value);
+// Set value for parameter (of any type).
+CSIP_RETCODE CSIPsetParameter(
+    CSIP_MODEL* model, const char *name, void* value);
 
 // Get the number of variables added to the model.
 int CSIPgetNumVars(CSIP_MODEL* model);

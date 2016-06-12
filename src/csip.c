@@ -391,28 +391,9 @@ CSIP_RETCODE CSIPgetVarValues(CSIP_MODEL* model, double *output)
    return CSIP_RETCODE_OK;
 }
 
-CSIP_RETCODE CSIPsetIntParam(CSIP_MODEL* model, const char *name, int value)
+CSIP_RETCODE CSIPsetParameter(CSIP_MODEL* model, const char *name, void* value)
 {
-   return CSIP_RETCODE_OK;
-}
-CSIP_RETCODE CSIPsetDoubleParam(CSIP_MODEL* model, const char *name, double value)
-{
-   return CSIP_RETCODE_OK;
-}
-CSIP_RETCODE CSIPsetBoolParam(CSIP_MODEL* model, const char *name, int value)
-{
-   return CSIP_RETCODE_OK;
-}
-CSIP_RETCODE CSIPsetStringParam(CSIP_MODEL* model, const char *name, const char *value)
-{
-   return CSIP_RETCODE_OK;
-}
-CSIP_RETCODE CSIPsetLongIntParam(CSIP_MODEL* model, const char *name, long long value)
-{
-   return CSIP_RETCODE_OK;
-}
-CSIP_RETCODE CSIPsetCharParam(CSIP_MODEL* model, const char *name, char value)
-{
+   SCIP_in_CSIP( SCIPsetParam(model->scip, name, value) );
    return CSIP_RETCODE_OK;
 }
 
