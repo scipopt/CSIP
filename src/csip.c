@@ -468,7 +468,8 @@ CSIP_RETCODE CSIPgetVarValues(CSIP_MODEL* model, double *output)
    return CSIP_RETCODE_OK;
 }
 
-CSIP_RETCODE CSIPsetParameter(CSIP_MODEL* model, const char *name, void* value)
+CSIP_RETCODE CSIPsetParameterGeneric(
+   CSIP_MODEL* model, const char *name, void* value)
 {
    SCIP_in_CSIP( SCIPsetParam(model->scip, name, value) );
    return CSIP_RETCODE_OK;

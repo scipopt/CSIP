@@ -106,8 +106,12 @@ double CSIPgetObjValue(CSIP_MODEL* model);
 CSIP_STATUS CSIPgetStatus(CSIP_MODEL* model);
 
 // Set value for parameter (of any type).
-CSIP_RETCODE CSIPsetParameter(
+CSIP_RETCODE CSIPsetParameterGeneric(
     CSIP_MODEL* model, const char *name, void* value);
+
+// convenience macro to avoid cast to void*
+#define CSIPsetParameter(model, name, value) \
+    CSIPsetParameterGeneric((model), (name), (void*)(value))
 
 // Get the number of variables added to the model.
 int CSIPgetNumVars(CSIP_MODEL* model);
