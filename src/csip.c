@@ -6,29 +6,29 @@
 // map return codes: SCIP -> CSIP
 static inline int retCodeSCIPtoCSIP(int scipRetCode)
 {
-    switch(scipRetCode)
-    {
-    case SCIP_OKAY:
-        return CSIP_RETCODE_OK;
-    case SCIP_NOMEMORY:
-        return CSIP_RETCODE_NOMEMORY;
-    default: // all the same for us
-        return CSIP_RETCODE_ERROR;
-    }
+   switch(scipRetCode)
+   {
+   case SCIP_OKAY:
+      return CSIP_RETCODE_OK;
+   case SCIP_NOMEMORY:
+      return CSIP_RETCODE_NOMEMORY;
+   default: // all the same for us
+      return CSIP_RETCODE_ERROR;
+   }
 }
 
 // map return codes: CSIP -> SCIP
 static inline int retCodeCSIPtoSCIP(int csipRetCode)
 {
-    switch(csipRetCode)
-    {
-    case CSIP_RETCODE_OK:
-        return SCIP_OKAY;
-    case CSIP_RETCODE_NOMEMORY:
-        return SCIP_NOMEMORY;
-    default: // CSIP_RETCODE_ERROR
-        return SCIP_ERROR;
-    }
+   switch(csipRetCode)
+   {
+   case CSIP_RETCODE_OK:
+      return SCIP_OKAY;
+   case CSIP_RETCODE_NOMEMORY:
+      return SCIP_NOMEMORY;
+   default: // CSIP_RETCODE_ERROR
+      return SCIP_ERROR;
+   }
 }
 
 
