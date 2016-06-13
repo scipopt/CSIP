@@ -1,12 +1,12 @@
 #include <stdlib.h>
-#include <assert.h>
-#include <csip.h>
 #include <math.h>
 
-#define CHECK(x) assert((x) == CSIP_RETCODE_OK)
+#include <csip.h>
 
-void test_lp() {
+#include "minunit.h"
+int mu_tests_run = 0;
 
+static char* test_lp() {
     /*
       Small LP:
       min -x
@@ -20,49 +20,37 @@ void test_lp() {
     double conscoef[] = {2.0, 1.0};
     double solution[2];
     CSIP_MODEL *m;
-    CSIP_RETCODE status;
 
-    status = CSIPcreateModel(&m);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPcreateModel(&m) );
 
     int x_idx, y_idx;
+    CHECK( CSIPaddVar(m, 0.0, INFINITY, CSIP_VARTYPE_CONTINUOUS, &x_idx) );
+    CHECK( CSIPaddVar(m, 0.0, INFINITY, CSIP_VARTYPE_CONTINUOUS, &y_idx) );
+    mu_assert("Wrong var index!", x_idx == 0);
+    mu_assert("Wrong var index!", y_idx == 1);
 
-    status = CSIPaddVar(m, 0.0, INFINITY, CSIP_VARTYPE_CONTINUOUS, &x_idx);
-    assert(status == CSIP_RETCODE_OK);
-    status = CSIPaddVar(m, 0.0, INFINITY, CSIP_VARTYPE_CONTINUOUS, &y_idx);
-    assert(status == CSIP_RETCODE_OK);
-
-    assert(x_idx == 0);
-    assert(y_idx == 1);
-
-    status = CSIPsetObj(m, numindices, indices, objcoef);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPsetObj(m, numindices, indices, objcoef) );
     int cons_idx;
-    status = CSIPaddLinCons(m, numindices, indices, conscoef, -INFINITY, 1.5, &cons_idx);
-    assert(status == CSIP_RETCODE_OK);
-    assert(cons_idx == 0);
+    CHECK( CSIPaddLinCons(m, numindices, indices, conscoef, -INFINITY, 1.5, &cons_idx) );
+    mu_assert("Wrong cons index!", cons_idx == 0);
 
-    status = CSIPsolve(m);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPsolve(m) );
 
     int solvestatus = CSIPgetStatus(m);
-    assert(solvestatus == CSIP_STATUS_OPTIMAL);
+    mu_assert("Wrong status!", solvestatus == CSIP_STATUS_OPTIMAL);
 
     double objval = CSIPgetObjValue(m);
+    mu_assert("Wrong objective value!", fabs(objval - (-0.75)) <= 1e-5);
 
-    assert(fabs(objval - (-0.75)) <= 1e-5);
+    CHECK( CSIPgetVarValues(m, solution) );
+    mu_assert("Wrong solution!", fabs(solution[0] - 0.75) <= 1e-5);
+    mu_assert("Wrong solution!", fabs(solution[1] - 0.0) <= 1e-5);
 
-    status = CSIPgetVarValues(m, solution);
-
-    assert(fabs(solution[0] - 0.75) <= 1e-5);
-    assert(fabs(solution[1] - 0.0) <= 1e-5);
-
-    CSIPfreeModel(m);
-
+    CHECK( CSIPfreeModel(m) );
+    return 0;
 }
 
-void test_mip() {
-
+static char* test_mip() {
     /*
       Small MIP:
       min -5x_1 - 3x_2 - 2x_3 - 7x_4 - 4x_5
@@ -76,48 +64,39 @@ void test_mip() {
     double conscoef[] = {2.0, 8.0, 4.0, 2.0, 5.0};
     double solution[5];
     CSIP_MODEL *m;
-    CSIP_RETCODE status;
 
-    status = CSIPcreateModel(&m);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPcreateModel(&m) );
 
     int var_idx;
     for (int i = 0; i < 5; i++) {
-        //status = CSIPaddVar(m, -INFINITY, INFINITY, CSIP_VARTYPE_BINARY, &var_idx);
-        status = CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_BINARY, &var_idx);
-        assert(var_idx == i);
+        CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_BINARY, &var_idx) );
+        mu_assert("Wrong var index!", var_idx == i);
     }
 
-    status = CSIPsetObj(m, numindices, indices, objcoef);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPsetObj(m, numindices, indices, objcoef) );
     int cons_idx;
-    status = CSIPaddLinCons(m, numindices, indices, conscoef, -INFINITY, 10.0, &cons_idx);
-    assert(status == CSIP_RETCODE_OK);
-    assert(cons_idx == 0);
+    CHECK( CSIPaddLinCons(m, numindices, indices, conscoef, -INFINITY, 10.0, &cons_idx) );
+    mu_assert("Wrong cons index!", cons_idx == 0);
 
-    status = CSIPsolve(m);
-    assert(status == CSIP_RETCODE_OK);
-
+    CHECK( CSIPsolve(m) );
     int solvestatus = CSIPgetStatus(m);
-    assert(solvestatus == CSIP_STATUS_OPTIMAL);
+    mu_assert("Wrong status!", solvestatus == CSIP_STATUS_OPTIMAL);
 
     double objval = CSIPgetObjValue(m);
+    mu_assert("Wrong objective value!", fabs(objval - (-16.0)) <= 1e-5);
 
-    assert(fabs(objval - (-16.0)) <= 1e-5);
+    CHECK( CSIPgetVarValues(m, solution) );
+    mu_assert("Wrong solution!", fabs(solution[0] - 1.0) <= 1e-5);
+    mu_assert("Wrong solution!", fabs(solution[1] - 0.0) <= 1e-5);
+    mu_assert("Wrong solution!", fabs(solution[2] - 0.0) <= 1e-5);
+    mu_assert("Wrong solution!", fabs(solution[3] - 1.0) <= 1e-5);
+    mu_assert("Wrong solution!", fabs(solution[4] - 1.0) <= 1e-5);
 
-    status = CSIPgetVarValues(m, solution);
-
-    assert(fabs(solution[0] - 1.0) <= 1e-5);
-    assert(fabs(solution[1] - 0.0) <= 1e-5);
-    assert(fabs(solution[2] - 0.0) <= 1e-5);
-    assert(fabs(solution[3] - 1.0) <= 1e-5);
-    assert(fabs(solution[4] - 1.0) <= 1e-5);
-
-    CSIPfreeModel(m);
+    CHECK( CSIPfreeModel(m) );
+    return 0;
 }
 
-void test_mip2() {
-
+static char* test_mip2() {
     /*
       Small unbounded MIP:
       min  x
@@ -127,30 +106,25 @@ void test_mip2() {
     int indices[] = {0};
     double objcoef[] = {1.0};
     CSIP_MODEL *m;
-    CSIP_RETCODE status;
 
-    status = CSIPcreateModel(&m);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPcreateModel(&m) );
 
     int x_idx;
-    status = CSIPaddVar(m, -INFINITY, INFINITY, CSIP_VARTYPE_INTEGER, &x_idx);
-    assert(status == CSIP_RETCODE_OK);
-    assert(x_idx == 0);
+    CHECK( CSIPaddVar(m, -INFINITY, INFINITY, CSIP_VARTYPE_INTEGER, &x_idx) );
+    mu_assert("Wrong var index!", x_idx == 0);
 
-    status = CSIPsetObj(m, numindices, indices, objcoef);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPsetObj(m, numindices, indices, objcoef) );
 
-    status = CSIPsolve(m);
-    assert(status == CSIP_RETCODE_OK);
-
+    CHECK( CSIPsolve(m) );
     int solvestatus = CSIPgetStatus(m);
-    //assert(solvestatus == CSIP_STATUS_UNBOUNDED);
+    mu_assert("Wrong status!", (solvestatus == CSIP_STATUS_UNBOUNDED
+                                || solvestatus == CSIP_STATUS_INFORUNBD));
 
-    CSIPfreeModel(m);
+    CHECK( CSIPfreeModel(m) );
+    return 0;
 }
 
-void test_mip3() {
-
+static char* test_mip3() {
     /*
       Small infeasible MIP:
       min  x
@@ -162,32 +136,24 @@ void test_mip3() {
     double objcoef[] = {1.0};
     double conscoef[] = {1.0};
     CSIP_MODEL *m;
-    CSIP_RETCODE status;
 
-    status = CSIPcreateModel(&m);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPcreateModel(&m) );
+    CHECK( CSIPaddVar(m, -INFINITY, INFINITY, CSIP_VARTYPE_INTEGER, NULL) );
+    CHECK( CSIPsetObj(m, numindices, indices, objcoef) );
 
-    status = CSIPaddVar(m, -INFINITY, INFINITY, CSIP_VARTYPE_INTEGER, NULL);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPaddLinCons(m, numindices, indices, conscoef, -INFINITY, 1.0, NULL) );
+    CHECK( CSIPaddLinCons(m, numindices, indices, conscoef, 2.0, INFINITY, NULL) );
 
-    status = CSIPsetObj(m, numindices, indices, objcoef);
-    assert(status == CSIP_RETCODE_OK);
-
-    status = CSIPaddLinCons(m, numindices, indices, conscoef, -INFINITY, 1.0, NULL);
-    assert(status == CSIP_RETCODE_OK);
-    status = CSIPaddLinCons(m, numindices, indices, conscoef, 2.0, INFINITY, NULL);
-    assert(status == CSIP_RETCODE_OK);
-
-    status = CSIPsolve(m);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPsolve(m) );
 
     int solvestatus = CSIPgetStatus(m);
-    //assert(solvestatus == CSIP_STATUS_INFEASIBLE);
+    mu_assert("Wrong status!", solvestatus == CSIP_STATUS_INFEASIBLE);
 
-    CSIPfreeModel(m);
+    CHECK( CSIPfreeModel(m) );
+    return 0;
 }
 
-void test_socp() {
+static char* test_socp() {
     /*
       min t
       s.t. x + y >= 1
@@ -205,56 +171,42 @@ void test_socp() {
     double solution[3];
 
     CSIP_MODEL *m;
-    CSIP_RETCODE status;
 
-    status = CSIPcreateModel(&m);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPcreateModel(&m) );
 
     // t
-    status = CSIPaddVar(m, 0.0, INFINITY, CSIP_VARTYPE_CONTINUOUS, NULL);
-    assert(status == CSIP_RETCODE_OK);
-
+    CHECK( CSIPaddVar(m, 0.0, INFINITY, CSIP_VARTYPE_CONTINUOUS, NULL) );
     // x
-    status = CSIPaddVar(m, -INFINITY, INFINITY, CSIP_VARTYPE_CONTINUOUS, NULL);
-    assert(status == CSIP_RETCODE_OK);
-
+    CHECK( CSIPaddVar(m, -INFINITY, INFINITY, CSIP_VARTYPE_CONTINUOUS, NULL) );
     // y
-    status = CSIPaddVar(m, -INFINITY, INFINITY, CSIP_VARTYPE_CONTINUOUS, NULL);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPaddVar(m, -INFINITY, INFINITY, CSIP_VARTYPE_CONTINUOUS, NULL) );
 
-    int numvars = CSIPgetNumVars(m);
-    assert(numvars == 3);
+    mu_assert("Wrong number of vars!", CSIPgetNumVars(m) == 3);
 
     // sparse objective
-    status = CSIPsetObj(m, 1, objindices, objcoef);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPsetObj(m, 1, objindices, objcoef) );
 
     // sparse constraint
-    status = CSIPaddLinCons(m, 2, linindices, lincoef, 1.0, INFINITY, NULL);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPaddLinCons(m, 2, linindices, lincoef, 1.0, INFINITY, NULL) );
 
-    status = CSIPaddQuadCons(m, 0, NULL, NULL, 3, quadi, quadj, quadcoef, -INFINITY, 0.0, NULL);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPaddQuadCons(m, 0, NULL, NULL, 3, quadi, quadj, quadcoef, -INFINITY, 0.0, NULL) );
 
-    status = CSIPsolve(m);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPsolve(m) );
 
     int solvestatus = CSIPgetStatus(m);
-    assert(solvestatus == CSIP_STATUS_OPTIMAL);
+    mu_assert("Wrong status!", solvestatus == CSIP_STATUS_OPTIMAL);
 
     double objval = CSIPgetObjValue(m);
+    mu_assert("Wrong objective value!", fabs(objval - (sqrt(0.5))) <= 1e-5);
 
-    assert(fabs(objval - (sqrt(0.5))) <= 1e-5);
+    CHECK( CSIPgetVarValues(m, solution) );
 
-    status = CSIPgetVarValues(m, solution);
+    mu_assert("Wrong solution!", fabs(solution[0] - sqrt(0.5)) <= 1e-5);
+    mu_assert("Wrong solution!", fabs(solution[1] - 0.5) <= sqrt(1e-5));
+    mu_assert("Wrong solution!", fabs(solution[2] - 0.5) <= sqrt(1e-5));
 
-    assert(fabs(solution[0] - sqrt(0.5)) <= 1e-5);
-    //assert(fabs(solution[1] - 0.5) <= 1e-5);
-    //assert(fabs(solution[2] - 0.5) <= 1e-5);
-    assert(fabs(solution[1] - 0.5) <= sqrt(1e-5));
-    assert(fabs(solution[2] - 0.5) <= sqrt(1e-5));
-
-    CSIPfreeModel(m);
+    CHECK( CSIPfreeModel(m) );
+    return 0;
 }
 
 struct MyData {
@@ -265,7 +217,7 @@ struct MyData {
 CSIP_RETCODE lazy_callback(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata) {
 
     struct MyData *data = (struct MyData*) userdata;
-    assert(data->foo == 10);
+    mu_assert("User data corrupt!", data->foo == 10);
     int indices[] = {0,1};
     double coef[] = {1.0,1.0};
 
@@ -286,7 +238,7 @@ CSIP_RETCODE lazy_callback(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata) {
  * which is unbounded, and for some scip-bug reason, it asserted some stuff
  * I am changing the problem to reflect Miles original vision
  */
-void test_lazy() {
+static char* test_lazy() {
 
     /*
        max 0.5x + y
@@ -300,58 +252,51 @@ void test_lazy() {
     double solution[2];
 
     CSIP_MODEL *m;
-    CSIP_RETCODE status;
 
-    status = CSIPcreateModel(&m);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPcreateModel(&m) );
 
     // x
-    status = CSIPaddVar(m, 0.0, 2.0, CSIP_VARTYPE_INTEGER, NULL);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPaddVar(m, 0.0, 2.0, CSIP_VARTYPE_INTEGER, NULL) );
 
     // y
-    status = CSIPaddVar(m, 0.0, 2.0, CSIP_VARTYPE_INTEGER, NULL);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPaddVar(m, 0.0, 2.0, CSIP_VARTYPE_INTEGER, NULL) );
 
-    status = CSIPsetObj(m, 2, objindices, objcoef);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPsetObj(m, 2, objindices, objcoef) );
 
-    status = CSIPsetSenseMaximize(m);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPsetSenseMaximize(m) );
 
     struct MyData userdata = { 10, &solution[0] };
 
-    status = CSIPaddLazyCallback(m, lazy_callback, 1, &userdata);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPaddLazyCallback(m, lazy_callback, 1, &userdata) );
 
-    status = CSIPsolve(m);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPsolve(m) );
 
     int solvestatus = CSIPgetStatus(m);
-    assert(solvestatus == CSIP_STATUS_OPTIMAL);
+    mu_assert("Wrong status!", solvestatus == CSIP_STATUS_OPTIMAL);
 
     double objval = CSIPgetObjValue(m);
+    mu_assert("Wrong objective!", fabs(objval - 2.5) <= 1e-5);
 
-    assert(fabs(objval - 2.5) <= 1e-5);
+    CHECK( CSIPgetVarValues(m, solution) );
 
-    status = CSIPgetVarValues(m, solution);
+    mu_assert("Wrong solution!", fabs(solution[0] - 1.0) <= 1e-5);
+    mu_assert("Wrong solution!", fabs(solution[1] - 2.0) <= 1e-5);
 
-    assert(fabs(solution[0] - 1.0) <= 1e-5);
-    assert(fabs(solution[1] - 2.0) <= 1e-5);
-
-    CSIPfreeModel(m);
+    CHECK( CSIPfreeModel(m) );
+    return 0;
 }
 
 CSIP_RETCODE lazy_callback2(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata) {
 
     struct MyData *data = (struct MyData*) userdata;
-    assert(data->foo == 10);
+    mu_assert("User data corrupt!", data->foo == 10);
     int indices[] = {0};
     double coef[] = {1.0};
 
     CSIPcbGetVarValues(cb, data->storage);
     // make sure we didn't get a fractional solution
-    assert(data->storage[0] - round(data->storage[0]) < 1e-4);
+    mu_assert("Fractional solution in callback!",
+              data->storage[0] - round(data->storage[0]) < 1e-4);
 
     // always add the cut x <= 10
     CSIPcbAddLinCons(cb, 1, indices, coef, -INFINITY, 10.5, 0);
@@ -359,7 +304,7 @@ CSIP_RETCODE lazy_callback2(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata) {
     return CSIP_RETCODE_OK;
 }
 
-void test_lazy2() {
+static char* test_lazy2() {
 
     /*
        min -x
@@ -373,87 +318,69 @@ void test_lazy2() {
     double solution[1];
 
     CSIP_MODEL *m;
-    CSIP_RETCODE status;
 
-    status = CSIPcreateModel(&m);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPcreateModel(&m) );
 
     // x
-    status = CSIPaddVar(m, -INFINITY, 100.5, CSIP_VARTYPE_INTEGER, NULL);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPaddVar(m, -INFINITY, 100.5, CSIP_VARTYPE_INTEGER, NULL) );
 
-    status = CSIPsetObj(m, 1, objindices, objcoef);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPsetObj(m, 1, objindices, objcoef) );
 
     struct MyData userdata = { 10, &solution[0] };
 
     // test fractional = 0
-    status = CSIPaddLazyCallback(m, lazy_callback2, 0, &userdata);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPaddLazyCallback(m, lazy_callback2, 0, &userdata) );
 
-    status = CSIPsolve(m);
-    assert(status == CSIP_RETCODE_OK);
+    CHECK( CSIPsolve(m) );
 
     int solvestatus = CSIPgetStatus(m);
-    assert(solvestatus == CSIP_STATUS_OPTIMAL);
+    mu_assert("Wrong status!", solvestatus == CSIP_STATUS_OPTIMAL);
 
     double objval = CSIPgetObjValue(m);
+    mu_assert("Wrong objective value!", fabs(objval - (-10)) <= 1e-5);
 
-    assert(fabs(objval - (-10)) <= 1e-5);
+    CHECK( CSIPgetVarValues(m, solution) );
+    mu_assert("Wrong solution!", fabs(solution[0] - 10.0) <= 1e-5);
 
-    status = CSIPgetVarValues(m, solution);
-
-    assert(fabs(solution[0] - 10.0) <= 1e-5);
-
-    CSIPfreeModel(m);
+    CHECK( CSIPfreeModel(m) );
+    return 0;
 }
 
-void test_objsense() {
+static char* test_objsense() {
     // min/max  x
     // st.      lb <= x <= ub
-
     CSIP_MODEL *m;
-    CSIP_RETCODE rc;
     int objindices[] = {0};
     double objcoef[] = {1.0};
     double lb = -2.3;
     double ub =  4.2;
 
-    rc = CSIPcreateModel(&m);
-    assert(rc == CSIP_RETCODE_OK);
-
-    rc = CSIPaddVar(m, lb, ub, CSIP_VARTYPE_CONTINUOUS, NULL);
-    assert(rc == CSIP_RETCODE_OK);
-
-    rc = CSIPsetObj(m, 1, objindices, objcoef);
-    assert(rc == CSIP_RETCODE_OK);
+    CHECK( CSIPcreateModel(&m) );
+    CHECK( CSIPaddVar(m, lb, ub, CSIP_VARTYPE_CONTINUOUS, NULL) );
+    CHECK( CSIPsetObj(m, 1, objindices, objcoef) );
 
     // default sense is 'minimize'
-    rc = CSIPsolve(m);
-    assert(rc == CSIP_RETCODE_OK);
-    assert(CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
-    assert(fabs(CSIPgetObjValue(m) - lb) <= 1e-5);
+    CHECK( CSIPsolve(m) );
+    mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
+    mu_assert("Wrong objective value!", fabs(CSIPgetObjValue(m) - lb) <= 1e-5);
 
     // change sense to 'maximize'
-    rc = CSIPsetSenseMaximize(m);
-    assert(rc == CSIP_RETCODE_OK);
-    rc = CSIPsolve(m);
-    assert(rc == CSIP_RETCODE_OK);
-    assert(CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
-    assert(fabs(CSIPgetObjValue(m) - ub) <= 1e-5);
+    CHECK( CSIPsetSenseMaximize(m) );
+    CHECK( CSIPsolve(m) );
+    mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
+    mu_assert("Wrong objective value!", fabs(CSIPgetObjValue(m) - ub) <= 1e-5);
 
     // change sense to 'minimize'
-    rc = CSIPsetSenseMinimize(m);
-    assert(rc == CSIP_RETCODE_OK);
-    rc = CSIPsolve(m);
-    assert(rc == CSIP_RETCODE_OK);
-    assert(CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
-    assert(fabs(CSIPgetObjValue(m) - lb) <= 1e-5);
+    CHECK( CSIPsetSenseMinimize(m) );
+    CHECK( CSIPsolve(m) );
+    mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
+    mu_assert("Wrong objective value!", fabs(CSIPgetObjValue(m) - lb) <= 1e-5);
 
-    CSIPfreeModel(m);
+    CHECK( CSIPfreeModel(m) );
+    return 0;
 }
 
-void test_sos1() {
+static char* test_sos1() {
     // max 2x + 3y + 4z
     //     SOS1(x, y, z)
     //     0 <= x, y, z <= 1
@@ -472,12 +399,13 @@ void test_sos1() {
     CHECK( CSIPsetSenseMaximize(m) );
     CHECK( CSIPsetObj(m, 3, objindices, objcoef) );
     CHECK( CSIPsolve(m) );
-    assert(CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
-    assert(fabs(CSIPgetObjValue(m) - 4.0) <= 1e-5);
+    mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
+    mu_assert("Wrong objective value!", fabs(CSIPgetObjValue(m) - 4.0) <= 1e-5);
     CHECK( CSIPfreeModel(m) );
+    return 0;
 }
 
-void test_sos2() {
+static char* test_sos2() {
     // max 2x + 3y + 4z
     //     SOS2(x, y, z)
     //     0 <= x, y, z <= 1
@@ -496,12 +424,13 @@ void test_sos2() {
     CHECK( CSIPsetSenseMaximize(m) );
     CHECK( CSIPsetObj(m, 3, objindices, objcoef) );
     CHECK( CSIPsolve(m) );
-    assert(CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
-    assert(fabs(CSIPgetObjValue(m) - 7.0) <= 1e-5);
+    mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
+    mu_assert("Wrong objective value!", fabs(CSIPgetObjValue(m) - 7.0) <= 1e-5);
     CHECK( CSIPfreeModel(m) );
+    return 0;
 }
 
-void test_sos1_sos2() {
+static char* test_sos1_sos2() {
     // max 2x + 3y + 4z
     //     SOS1(y, z)
     //     SOS2(x, y, z)
@@ -522,12 +451,13 @@ void test_sos1_sos2() {
     CHECK( CSIPsetSenseMaximize(m) );
     CHECK( CSIPsetObj(m, 3, objindices, objcoef) );
     CHECK( CSIPsolve(m) );
-    assert(CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
-    assert(fabs(CSIPgetObjValue(m) - 5.0) <= 1e-5);
+    mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
+    mu_assert("Wrong objective value!", fabs(CSIPgetObjValue(m) - 5.0) <= 1e-5);
     CHECK( CSIPfreeModel(m) );
+    return 0;
 }
 
-void test_manythings() {
+static char* test_manythings() {
     // add many vars and conss to test variable sized array
     CSIP_MODEL *m;
     int indices[] = {0};
@@ -541,6 +471,7 @@ void test_manythings() {
         CHECK( CSIPaddLinCons(m, 1, indices, coefs, 0.0, 1.0, NULL) );
     }
     CHECK( CSIPfreeModel(m) );
+    return 0;
 }
 
 
@@ -560,7 +491,7 @@ CSIP_RETCODE doubly_lazy_cb(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata) {
     return CSIP_RETCODE_OK;
 }
 
-void test_doublelazy() {
+static char* test_doublelazy() {
     // max x + 3y + z
     //     x + y + z <= 2
     //     x + y <= 1 // lazy1
@@ -593,33 +524,45 @@ void test_doublelazy() {
     CHECK( CSIPaddLazyCallback(m, doubly_lazy_cb, 0, &data2) );
 
     CHECK( CSIPsolve(m) );
+    mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
+    mu_assert("Wrong objective value!", fabs(CSIPgetObjValue(m) - 3.0) <= 1e-5);
 
-    assert(CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
-    assert(fabs(CSIPgetObjValue(m) - 3.0) <= 1e-5);
     CHECK( CSIPgetVarValues(m, solution) );
-    assert(fabs(solution[0] - 0.0) <= 1e-5);
-    assert(fabs(solution[1] - 1.0) <= 1e-5);
-    assert(fabs(solution[0] - 0.0) <= 1e-5);
+    mu_assert("Wrong solution!", fabs(solution[0] - 0.0) <= 1e-5);
+    mu_assert("Wrong solution!", fabs(solution[1] - 1.0) <= 1e-5);
+    mu_assert("Wrong solution!", fabs(solution[0] - 0.0) <= 1e-5);
 
     CHECK( CSIPfreeModel(m) );
+    return 0;
 }
 
-int main() {
-
-    // run all the tests
-    test_lp();
-    test_mip();
-    test_mip2();
-    test_mip3();
-    test_socp();
-    test_lazy();
-    test_lazy2();
-    test_objsense();
-    test_sos1();
-    test_sos2();
-    test_sos1_sos2();
-    test_manythings();
-    test_doublelazy();
+static char* all_tests() {
+    mu_run_test(test_lp);
+    mu_run_test(test_mip);
+    mu_run_test(test_mip2);
+    mu_run_test(test_mip3);
+    mu_run_test(test_socp);
+    mu_run_test(test_lazy);
+    mu_run_test(test_lazy2);
+    mu_run_test(test_objsense);
+    mu_run_test(test_sos1);
+    mu_run_test(test_sos2);
+    mu_run_test(test_sos1_sos2);
+    mu_run_test(test_manythings);
+    mu_run_test(test_doublelazy);
 
     return 0;
+}
+
+int main(int argc, char **argv) {
+    char *result = all_tests();
+    if (result != 0) {
+        printf("%s\n", result);
+    }
+    else {
+        printf("ALL TESTS PASSED\n");
+    }
+    printf("Tests run: %d\n", mu_tests_run);
+
+    return result != 0;
 }
