@@ -222,7 +222,8 @@ struct MyData {
 CSIP_RETCODE lazy_callback(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata) {
 
     struct MyData *data = (struct MyData*) userdata;
-    mu_assert("User data corrupt!", data->foo == 10);
+    if(data->foo != 10)
+        return CSIP_RETCODE_ERROR;
     int indices[] = {0,1};
     double coef[] = {1.0,1.0};
 
@@ -295,14 +296,16 @@ static char* test_lazy() {
 CSIP_RETCODE lazy_callback2(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata) {
 
     struct MyData *data = (struct MyData*) userdata;
-    mu_assert("User data corrupt!", data->foo == 10);
+    if(data->foo != 10)
+        return CSIP_RETCODE_ERROR;
+
     int indices[] = {0};
     double coef[] = {1.0};
 
     CSIPcbGetVarValues(cb, data->storage);
     // make sure we didn't get a fractional solution
-    mu_assert("Fractional solution in callback!",
-              data->storage[0] - round(data->storage[0]) < 1e-4);
+    if(data->storage[0] - round(data->storage[0]) > 1e-4)
+        return CSIP_RETCODE_ERROR;
 
     // always add the cut x <= 10
     CSIPcbAddLinCons(cb, 1, indices, coef, -INFINITY, 10.5, 0);
