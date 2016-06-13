@@ -418,7 +418,6 @@ void test_objsense() {
     double objcoef[] = {1.0};
     double lb = -2.3;
     double ub =  4.2;
-    double solution[1];
 
     rc = CSIPcreateModel(&m);
     assert(rc == CSIP_RETCODE_OK);
@@ -464,7 +463,6 @@ void test_sos1() {
     CSIP_MODEL *m;
     int objindices[] = {0, 1, 2};
     double objcoef[] = {2.0, 3.0, 4.0};
-    double solution[3];
 
     CHECK( CSIPcreateModel(&m) );
     CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL) ); // x
@@ -489,7 +487,6 @@ void test_sos2() {
     CSIP_MODEL *m;
     int objindices[] = {0, 1, 2};
     double objcoef[] = {2.0, 3.0, 4.0};
-    double solution[3];
 
     CHECK( CSIPcreateModel(&m) );
     CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL) ); // x
@@ -515,7 +512,6 @@ void test_sos1_sos2() {
     CSIP_MODEL *m;
     int objindices[] = {0, 1, 2};
     double objcoef[] = {2.0, 3.0, 4.0};
-    double solution[3];
 
     CHECK( CSIPcreateModel(&m) );
     CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL) ); // x
@@ -547,6 +543,67 @@ void test_manythings() {
     CHECK( CSIPfreeModel(m) );
 }
 
+
+// store cut data
+struct DoubleData {
+    int indices[2];
+};
+
+CSIP_RETCODE doubly_lazy_cb(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata) {
+
+    struct DoubleData *data = (struct DoubleData*) userdata;
+    double coef[] = {1.0, 1.0};
+
+    // always add the cut var1 + var2 <= 1
+    CSIPcbAddLinCons(cb, 2, data->indices, coef, -INFINITY, 1.0, 0);
+
+    return CSIP_RETCODE_OK;
+}
+
+void test_doublelazy() {
+    // max x + 3y + z
+    //     x + y + z <= 2
+    //     x + y <= 1 // lazy1
+    //     y + z <= 1 // lazy2
+    //     0 <= x, y, z <= 1
+    //
+    // sol -> (0, 1, 0)
+
+    CSIP_MODEL *m;
+    int indices[] = {0, 1, 2};
+    double lincoef[] = {1.0, 1.0, 1.0};
+    double objcoef[] = {1.0, 3.0, 1.0};
+    struct DoubleData data1, data2;
+    double solution[3];
+
+    CHECK( CSIPcreateModel(&m) );
+    CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL) ); // x
+    CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL) ); // y
+    CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL) ); // z
+    CHECK( CSIPaddLinCons(m, 1, indices, lincoef, -INFINITY, 2.0, NULL) );
+    CHECK( CSIPsetSenseMaximize(m) );
+    CHECK( CSIPsetObj(m, 3, indices, objcoef) );
+
+    data1.indices[0] = 0;
+    data1.indices[1] = 1;
+    CHECK( CSIPaddLazyCallback(m, doubly_lazy_cb, 0, &data1) );
+
+    data2.indices[0] = 2;
+    data2.indices[1] = 1;
+    CHECK( CSIPaddLazyCallback(m, doubly_lazy_cb, 0, &data2) );
+
+    CHECK( CSIPsolve(m) );
+
+    assert(CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
+    assert(fabs(CSIPgetObjValue(m) - 3.0) <= 1e-5);
+    CHECK( CSIPgetVarValues(m, solution) );
+    assert(fabs(solution[0] - 0.0) <= 1e-5);
+    assert(fabs(solution[1] - 1.0) <= 1e-5);
+    assert(fabs(solution[0] - 0.0) <= 1e-5);
+
+    CHECK( CSIPfreeModel(m) );
+}
+
 int main() {
 
     // run all the tests
@@ -562,6 +619,7 @@ int main() {
     test_sos2();
     test_sos1_sos2();
     test_manythings();
+    test_doublelazy();
 
     return 0;
 }

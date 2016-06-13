@@ -64,6 +64,8 @@ struct csip_model
    int nconss;
    int consssize;
    SCIP_CONS** conss;
+   // counter for callback
+   int nlazycb;
 };
 
 /*
@@ -152,6 +154,8 @@ CSIP_RETCODE CSIPcreateModel(CSIP_MODEL** modelptr)
    model->conss = (SCIP_CONS**) malloc(INITIALSIZE * sizeof(SCIP_CONS*));
    if(model->conss == NULL)
       return CSIP_RETCODE_NOMEMORY;
+
+   model->nlazycb = 0;
 
    CSIP_CALL( CSIPsetParameter(model, "display/width", 80) );
 
@@ -554,12 +558,13 @@ CSIP_RETCODE CSIPaddLazyCallback(CSIP_MODEL* model, CSIP_LAZYCALLBACK callback, 
    conshdlrdata->callback = callback;
    conshdlrdata->userdata = userdata;
 
-   SCIPsnprintf(name, SCIP_MAXSTRLEN, "lazycons_");
+   SCIPsnprintf(name, SCIP_MAXSTRLEN, "lazycons_%d", model->nlazycb);
    SCIP_in_CSIP( SCIPincludeConshdlrBasic(
                     scip, &conshdlr, name, "lazy constraint callback",
                     priority, -1, -1, FALSE,
                     consEnfolpLazy, consEnfopsLazy, consCheckLazy, consLockLazy,
                     conshdlrdata) );
+   model->nlazycb += 1;
 
    return CSIP_RETCODE_OK;
 }
