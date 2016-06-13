@@ -22,6 +22,7 @@ static char* test_lp() {
     CSIP_MODEL *m;
 
     CHECK( CSIPcreateModel(&m) );
+    CHECK( CSIPsetParameter(m, "display/verblevel", 2));
 
     int x_idx, y_idx;
     CHECK( CSIPaddVar(m, 0.0, INFINITY, CSIP_VARTYPE_CONTINUOUS, &x_idx) );
@@ -66,6 +67,7 @@ static char* test_mip() {
     CSIP_MODEL *m;
 
     CHECK( CSIPcreateModel(&m) );
+    CHECK( CSIPsetParameter(m, "display/verblevel", 2));
 
     int var_idx;
     for (int i = 0; i < 5; i++) {
@@ -108,6 +110,7 @@ static char* test_mip2() {
     CSIP_MODEL *m;
 
     CHECK( CSIPcreateModel(&m) );
+    CHECK( CSIPsetParameter(m, "display/verblevel", 2));
 
     int x_idx;
     CHECK( CSIPaddVar(m, -INFINITY, INFINITY, CSIP_VARTYPE_INTEGER, &x_idx) );
@@ -138,6 +141,7 @@ static char* test_mip3() {
     CSIP_MODEL *m;
 
     CHECK( CSIPcreateModel(&m) );
+    CHECK( CSIPsetParameter(m, "display/verblevel", 2));
     CHECK( CSIPaddVar(m, -INFINITY, INFINITY, CSIP_VARTYPE_INTEGER, NULL) );
     CHECK( CSIPsetObj(m, numindices, indices, objcoef) );
 
@@ -173,6 +177,7 @@ static char* test_socp() {
     CSIP_MODEL *m;
 
     CHECK( CSIPcreateModel(&m) );
+    CHECK( CSIPsetParameter(m, "display/verblevel", 2));
 
     // t
     CHECK( CSIPaddVar(m, 0.0, INFINITY, CSIP_VARTYPE_CONTINUOUS, NULL) );
@@ -254,6 +259,7 @@ static char* test_lazy() {
     CSIP_MODEL *m;
 
     CHECK( CSIPcreateModel(&m) );
+    CHECK( CSIPsetParameter(m, "display/verblevel", 2));
 
     // x
     CHECK( CSIPaddVar(m, 0.0, 2.0, CSIP_VARTYPE_INTEGER, NULL) );
@@ -320,6 +326,7 @@ static char* test_lazy2() {
     CSIP_MODEL *m;
 
     CHECK( CSIPcreateModel(&m) );
+    CHECK( CSIPsetParameter(m, "display/verblevel", 2));
 
     // x
     CHECK( CSIPaddVar(m, -INFINITY, 100.5, CSIP_VARTYPE_INTEGER, NULL) );
@@ -356,6 +363,7 @@ static char* test_objsense() {
     double ub =  4.2;
 
     CHECK( CSIPcreateModel(&m) );
+    CHECK( CSIPsetParameter(m, "display/verblevel", 2));
     CHECK( CSIPaddVar(m, lb, ub, CSIP_VARTYPE_CONTINUOUS, NULL) );
     CHECK( CSIPsetObj(m, 1, objindices, objcoef) );
 
@@ -392,6 +400,7 @@ static char* test_sos1() {
     double objcoef[] = {2.0, 3.0, 4.0};
 
     CHECK( CSIPcreateModel(&m) );
+    CHECK( CSIPsetParameter(m, "display/verblevel", 2));
     CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL) ); // x
     CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL) ); // y
     CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL) ); // z
@@ -417,6 +426,7 @@ static char* test_sos2() {
     double objcoef[] = {2.0, 3.0, 4.0};
 
     CHECK( CSIPcreateModel(&m) );
+    CHECK( CSIPsetParameter(m, "display/verblevel", 2));
     CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL) ); // x
     CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL) ); // y
     CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL) ); // z
@@ -443,6 +453,7 @@ static char* test_sos1_sos2() {
     double objcoef[] = {2.0, 3.0, 4.0};
 
     CHECK( CSIPcreateModel(&m) );
+    CHECK( CSIPsetParameter(m, "display/verblevel", 2));
     CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL) ); // x
     CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL) ); // y
     CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL) ); // z
@@ -465,6 +476,7 @@ static char* test_manythings() {
     int n = 9999;
 
     CHECK( CSIPcreateModel(&m) );
+    CHECK( CSIPsetParameter(m, "display/verblevel", 2));
     for(int i = 0; i < n; ++i) {
         CHECK( CSIPaddVar(m, 0.0, i, CSIP_VARTYPE_CONTINUOUS, NULL) );
         indices[0] = i;
@@ -508,6 +520,7 @@ static char* test_doublelazy() {
     double solution[3];
 
     CHECK( CSIPcreateModel(&m) );
+    CHECK( CSIPsetParameter(m, "display/verblevel", 2));
     CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL) ); // x
     CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL) ); // y
     CHECK( CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL) ); // z
