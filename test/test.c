@@ -531,6 +531,22 @@ void test_sos1_sos2() {
     CHECK( CSIPfreeModel(m) );
 }
 
+void test_manythings() {
+    // add many vars and conss to test variable sized array
+    CSIP_MODEL *m;
+    int indices[] = {0};
+    double coefs[] = {1.0};
+    int n = 9999;
+
+    CHECK( CSIPcreateModel(&m) );
+    for(int i = 0; i < n; ++i) {
+        CHECK( CSIPaddVar(m, 0.0, i, CSIP_VARTYPE_CONTINUOUS, NULL) );
+        indices[0] = i;
+        CHECK( CSIPaddLinCons(m, 1, indices, coefs, 0.0, 1.0, NULL) );
+    }
+    CHECK( CSIPfreeModel(m) );
+}
+
 int main() {
 
     // run all the tests
@@ -545,6 +561,7 @@ int main() {
     test_sos1();
     test_sos2();
     test_sos1_sos2();
+    test_manythings();
 
     return 0;
 }

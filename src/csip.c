@@ -49,15 +49,21 @@ static inline int retCodeCSIPtoSCIP(int csipRetCode)
 // catch CSIP return code from SCIP
 #define CSIP_in_SCIP(x) SCIP_CALL( retCodeCSIPtoSCIP(x) )
 
-#define TODO 1000
+// variable sized arrays
+#define INITIALSIZE 64
+#define GROWFACTOR   2
 
 struct csip_model
 {
    SCIP* scip;
+   // variable sized array for variables
    int nvars;
-   SCIP_VAR* vars[TODO];
+   int varssize;
+   SCIP_VAR** vars;
+   // variable sized array for constraints
    int nconss;
-   SCIP_CONS* conss[TODO];
+   int consssize;
+   SCIP_CONS** conss;
 };
 
 /*
@@ -93,6 +99,16 @@ CSIP_RETCODE addCons(CSIP_MODEL* model, SCIP_CONS* cons, int* idx)
 
    SCIP_in_CSIP( SCIPaddCons(scip, cons) );
 
+   // do we need to resize?
+   if( model->nconss >= model->consssize )
+   {
+      model->consssize = GROWFACTOR * model->consssize;
+      model->conss = (SCIP_CONS**) realloc(
+         model->conss,  model->consssize * sizeof(SCIP_CONS*));
+      if( model->conss == NULL )
+         return CSIP_RETCODE_NOMEMORY;
+   }
+
    if( idx != NULL )
    {
       *idx = model->nconss;
@@ -126,7 +142,16 @@ CSIP_RETCODE CSIPcreateModel(CSIP_MODEL** modelptr)
    SCIP_in_CSIP( SCIPcreateProbBasic(model->scip, "name") );
 
    model->nvars = 0;
+   model->varssize = INITIALSIZE;
+   model->vars = (SCIP_VAR**) malloc(INITIALSIZE * sizeof(SCIP_VAR*));
+   if(model->vars == NULL)
+      return CSIP_RETCODE_NOMEMORY;
+
    model->nconss = 0;
+   model->consssize = INITIALSIZE;
+   model->conss = (SCIP_CONS**) malloc(INITIALSIZE * sizeof(SCIP_CONS*));
+   if(model->conss == NULL)
+      return CSIP_RETCODE_NOMEMORY;
 
    CSIP_CALL( CSIPsetParameter(model, "display/width", 80) );
 
@@ -155,6 +180,8 @@ CSIP_RETCODE CSIPfreeModel(CSIP_MODEL* model)
    }
    SCIP_in_CSIP( SCIPfree(&model->scip) );
 
+   free(model->conss);
+   free(model->vars);
    free(model);
 
    return CSIP_RETCODE_OK;
@@ -169,6 +196,16 @@ CSIP_RETCODE CSIPaddVar(CSIP_MODEL* model, double lowerbound, double upperbound,
 
    SCIP_in_CSIP( SCIPcreateVarBasic(scip, &var, NULL, lowerbound, upperbound, 0.0, vartype) );
    SCIP_in_CSIP( SCIPaddVar(scip, var) );
+
+   // do we need to resize?
+   if( model->nvars >= model->varssize )
+   {
+      model->varssize = GROWFACTOR * model->varssize;
+      model->vars = (SCIP_VAR**) realloc(
+         model->vars,  model->varssize * sizeof(SCIP_VAR*));
+      if( model->vars == NULL )
+         return CSIP_RETCODE_NOMEMORY;
+   }
 
    if( idx != NULL )
    {
