@@ -3,8 +3,6 @@
 #include <csip.h>
 #include <math.h>
 
-#define const  
-
 #define CHECK(x) assert((x) == CSIP_RETCODE_OK)
 
 void test_lp() {
@@ -17,9 +15,9 @@ void test_lp() {
       solution is (0.75,0) with objval -0.75
     */
     int numindices = 2;
-    const int indices[] = {0,1};
-    const double objcoef[] = {-1.0, 0.0};
-    const double conscoef[] = {2.0, 1.0};
+    int indices[] = {0,1};
+    double objcoef[] = {-1.0, 0.0};
+    double conscoef[] = {2.0, 1.0};
     double solution[2];
     CSIP_MODEL *m;
     CSIP_RETCODE status;
@@ -73,9 +71,9 @@ void test_mip() {
       solution is (1,0,0,1,1) with objval -16
     */
     int numindices = 5;
-    const int indices[] = {0,1,2,3,4};
-    const double objcoef[] = {-5.0, -3.0, -2.0, -7.0, -4.0};
-    const double conscoef[] = {2.0, 8.0, 4.0, 2.0, 5.0};
+    int indices[] = {0,1,2,3,4};
+    double objcoef[] = {-5.0, -3.0, -2.0, -7.0, -4.0};
+    double conscoef[] = {2.0, 8.0, 4.0, 2.0, 5.0};
     double solution[5];
     CSIP_MODEL *m;
     CSIP_RETCODE status;
@@ -126,8 +124,8 @@ void test_mip2() {
       x Integer
     */
     int numindices = 1;
-    const int indices[] = {0};
-    const double objcoef[] = {1.0};
+    int indices[] = {0};
+    double objcoef[] = {1.0};
     CSIP_MODEL *m;
     CSIP_RETCODE status;
 
@@ -160,9 +158,9 @@ void test_mip3() {
       x <= 1
     */
     int numindices = 1;
-    const int     indices[] = {0};
-    const double  objcoef[] = {1.0};
-    const double conscoef[] = {1.0};
+    int indices[] = {0};
+    double objcoef[] = {1.0};
+    double conscoef[] = {1.0};
     CSIP_MODEL *m;
     CSIP_RETCODE status;
 
@@ -197,13 +195,13 @@ void test_socp() {
            t >= 0
      */
 
-    const int objindices[] = {0};
-    const double objcoef[] = {1.0};
-    const int linindices[] = {1,2};
-    const double lincoef[] = {1.0,1.0};
-    const int quadi[] = {0,1,2};
-    const int quadj[] = {0,1,2};
-    const double quadcoef[] = {-1.0,1.0,1.0};
+    int objindices[] = {0};
+    double objcoef[] = {1.0};
+    int linindices[] = {1,2};
+    double lincoef[] = {1.0,1.0};
+    int quadi[] = {0,1,2};
+    int quadj[] = {0,1,2};
+    double quadcoef[] = {-1.0,1.0,1.0};
     double solution[3];
 
     CSIP_MODEL *m;
@@ -268,8 +266,8 @@ CSIP_RETCODE lazy_callback(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata) {
 
     struct MyData *data = (struct MyData*) userdata;
     assert(data->foo == 10);
-    const int indices[] = {0,1};
-    const double coef[] = {1.0,1.0};
+    int indices[] = {0,1};
+    double coef[] = {1.0,1.0};
 
     CSIPcbGetVarValues(cb, data->storage);
 
@@ -297,8 +295,8 @@ void test_lazy() {
        solution is (1,2)
      */
 
-    const int objindices[] = {0,1};
-    const double objcoef[] = {0.5,1.0};
+    int objindices[] = {0,1};
+    double objcoef[] = {0.5,1.0};
     double solution[2];
 
     CSIP_MODEL *m;
@@ -348,8 +346,8 @@ CSIP_RETCODE lazy_callback2(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata) {
 
     struct MyData *data = (struct MyData*) userdata;
     assert(data->foo == 10);
-    const int indices[] = {0};
-    const double coef[] = {1.0};
+    int indices[] = {0};
+    double coef[] = {1.0};
 
     CSIPcbGetVarValues(cb, data->storage);
     // make sure we didn't get a fractional solution
@@ -370,8 +368,8 @@ void test_lazy2() {
        solution is -10
      */
 
-    const int objindices[] = {0};
-    const double objcoef[] = {-1.0};
+    int objindices[] = {0};
+    double objcoef[] = {-1.0};
     double solution[1];
 
     CSIP_MODEL *m;
@@ -416,10 +414,10 @@ void test_objsense() {
 
     CSIP_MODEL *m;
     CSIP_RETCODE rc;
-    const int objindices[] = {0};
-    const double objcoef[] = {1.0};
-    const double lb = -2.3;
-    const double ub =  4.2;
+    int objindices[] = {0};
+    double objcoef[] = {1.0};
+    double lb = -2.3;
+    double ub =  4.2;
     double solution[1];
 
     rc = CSIPcreateModel(&m);
