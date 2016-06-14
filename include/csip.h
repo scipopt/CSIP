@@ -28,32 +28,32 @@ typedef int CSIP_VARTYPE;
 /* model definition */
 
 // Create a new model (and solver).
-CSIP_RETCODE CSIPcreateModel(CSIP_MODEL** model);
+CSIP_RETCODE CSIPcreateModel(CSIP_MODEL **model);
 
 // Free all memory of model (and solver).
-CSIP_RETCODE CSIPfreeModel(CSIP_MODEL* model);
+CSIP_RETCODE CSIPfreeModel(CSIP_MODEL *model);
 
 // Add new variable to model.
 // To omit a bound, use (-)INFINITY.
 // The variable index will be assigned to idx; pass NULL if not needed.
 CSIP_RETCODE CSIPaddVar(
-    CSIP_MODEL* model, double lowerbound, double upperbound,
+    CSIP_MODEL *model, double lowerbound, double upperbound,
     CSIP_VARTYPE vartype, int *idx);
 
 // Set new lower bounds for a set of variables.
 CSIP_RETCODE CSIPchgVarLB(
-    CSIP_MODEL* model, int numindices, int *indices, double *lowerbounds);
+    CSIP_MODEL *model, int numindices, int *indices, double *lowerbounds);
 
 // Set new lower bounds for a set of variables.
 CSIP_RETCODE CSIPchgVarUB(
-    CSIP_MODEL* model, int numindices, int *indices, double *upperbounds);
+    CSIP_MODEL *model, int numindices, int *indices, double *upperbounds);
 
 // Add new linear constraint to the model, of the form:
 //    lhs <= sum_i coefs[i] * vars[i] <= rhs
 // For one-sided inequalities, use (-)INFINITY for lhs or rhs.
 // The constraint index will be assigned to idx; pass NULL if not needed.
 CSIP_RETCODE CSIPaddLinCons(
-    CSIP_MODEL* model, int numindices, int *indices, double *coefs,
+    CSIP_MODEL *model, int numindices, int *indices, double *coefs,
     double lhs, double rhs, int *idx);
 
 // Add new quadratic constraint to the model, of the form:
@@ -62,7 +62,7 @@ CSIP_RETCODE CSIPaddLinCons(
 // For one-sided inequalities, use (-)INFINITY for lhs or rhs.
 // The constraint index will be assigned to idx; pass NULL if not needed.
 CSIP_RETCODE CSIPaddQuadCons(
-    CSIP_MODEL* model, int numlinindices, int *linindices, double *lincoefs,
+    CSIP_MODEL *model, int numlinindices, int *linindices, double *lincoefs,
     int numquadterms, int *quadrowindices, int *quadcolindices,
     double *quadcoefs, double lhs, double rhs, int *idx);
 
@@ -72,7 +72,7 @@ CSIP_RETCODE CSIPaddQuadCons(
 // Use weights to determine variable order, or NULL.
 // The constraint index will be assigned to idx; pass NULL if not needed.
 CSIP_RETCODE CSIPaddSOS1(
-    CSIP_MODEL* model, int numindices, int *indices, double *weights, int *idx);
+    CSIP_MODEL *model, int numindices, int *indices, double *weights, int *idx);
 
 // Add SOS2 (special ordered set of type 2) constraint on a set of
 // variables. That is, at most two consecutive variables are allowed
@@ -80,41 +80,41 @@ CSIP_RETCODE CSIPaddSOS1(
 // Use weights to determine variable order, or NULL.
 // The constraint index will be assigned to idx; pass NULL if not needed.
 CSIP_RETCODE CSIPaddSOS2(
-    CSIP_MODEL* model, int numindices, int *indices, double *weights, int *idx);
+    CSIP_MODEL *model, int numindices, int *indices, double *weights, int *idx);
 
 // Set the linear objective function of the form: sum_i coefs[i] * vars[i]
 CSIP_RETCODE CSIPsetObj(
-    CSIP_MODEL* model, int numindices, int *indices, double *coefs);
+    CSIP_MODEL *model, int numindices, int *indices, double *coefs);
 
 // Set the optimization sense to minimization. This is the default setting.
-CSIP_RETCODE CSIPsetSenseMinimize(CSIP_MODEL* model);
+CSIP_RETCODE CSIPsetSenseMinimize(CSIP_MODEL *model);
 
 // Set the optimization sense to maximization.
-CSIP_RETCODE CSIPsetSenseMaximize(CSIP_MODEL* model);
+CSIP_RETCODE CSIPsetSenseMaximize(CSIP_MODEL *model);
 
 // Solve the model.
-CSIP_RETCODE CSIPsolve(CSIP_MODEL* model);
+CSIP_RETCODE CSIPsolve(CSIP_MODEL *model);
 
 // Copy the values of all variables in the best known solution into
 // the output array. The user is responsible for memory allocation.
-CSIP_RETCODE CSIPgetVarValues(CSIP_MODEL* model, double *output);
+CSIP_RETCODE CSIPgetVarValues(CSIP_MODEL *model, double *output);
 
 // Get the objective value of the best-known solution.
-double CSIPgetObjValue(CSIP_MODEL* model);
+double CSIPgetObjValue(CSIP_MODEL *model);
 
 // Get the solving status.
-CSIP_STATUS CSIPgetStatus(CSIP_MODEL* model);
+CSIP_STATUS CSIPgetStatus(CSIP_MODEL *model);
 
 // Set value for parameter (of any type).
 CSIP_RETCODE CSIPsetParameterGeneric(
-    CSIP_MODEL* model, const char *name, void* value);
+    CSIP_MODEL *model, const char *name, void *value);
 
 // convenience macro to avoid cast to void*
 #define CSIPsetParameter(model, name, value) \
     CSIPsetParameterGeneric((model), (name), (void*)(value))
 
 // Get the number of variables added to the model.
-int CSIPgetNumVars(CSIP_MODEL* model);
+int CSIPgetNumVars(CSIP_MODEL *model);
 
 /* callback functions */
 
@@ -122,26 +122,26 @@ typedef struct SCIP_ConshdlrData CSIP_CBDATA;
 
 // Copy values of current (relaxation) solution to output array. Call
 // this function from your lazy constraint callback.
-CSIP_RETCODE CSIPcbGetVarValues(CSIP_CBDATA* cbdata, double *output);
+CSIP_RETCODE CSIPcbGetVarValues(CSIP_CBDATA *cbdata, double *output);
 
 // Add a linear constraint from a lazy constraint callback.
 // With islocal, you specify whether the added constraint is only
 // valid locally (in the branch-and-bound subtree).
 CSIP_RETCODE CSIPcbAddLinCons(
-    CSIP_CBDATA* cbdata, int numindices, int *indices, double *coefs,
+    CSIP_CBDATA *cbdata, int numindices, int *indices, double *coefs,
     double lhs, double rhs, int islocal);
 
-typedef CSIP_RETCODE (*CSIP_LAZYCALLBACK)(
-    CSIP_MODEL* model, CSIP_CBDATA* cbdata, void *userdata);
+typedef CSIP_RETCODE(*CSIP_LAZYCALLBACK)(
+    CSIP_MODEL *model, CSIP_CBDATA *cbdata, void *userdata);
 
 // Add a lazy constraint callback to the model.
 // With fractional == 0, the callback is only called for solution
 // candidates that satisfy all integrality conditions.
 // You may use userdata to pass any data.
 CSIP_RETCODE CSIPaddLazyCallback(
-    CSIP_MODEL* model, CSIP_LAZYCALLBACK cb, int fractional, void *userdata);
+    CSIP_MODEL *model, CSIP_LAZYCALLBACK cb, int fractional, void *userdata);
 
 /* advanced usage */
 
 // Get access to the internal SCIP solver. Use at your own risk!
-void *CSIPgetInternalSCIP(CSIP_MODEL* model);
+void *CSIPgetInternalSCIP(CSIP_MODEL *model);

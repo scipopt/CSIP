@@ -33,3 +33,4 @@
 *.su
 lib/
 /test/test
+*.orig

@@ -37,6 +37,7 @@ LTESTFLAGS 	= -L$(CSIPLIBDIR)
 TESTSRC 	= $(TESTDIR)/test.c
 TESTBIN 	= $(TESTDIR)/test # don't know where to put the test executable
 
+CSIPHEADER  = $(CSIPINC)/csip.h
 CSIPSRC 	= $(CSIPSRCDIR)/csip.c
 CSIPLIB 	= $(CSIPLIBDIR)/libcsip.so
 
@@ -97,3 +98,8 @@ $(TESTBIN): $(TESTSRC) $(CSIPLIB)
 	gcc $(CFLAGS) $(TESTFLAGS) $< $(LINKTESTFLAGS) $(TESTLIBS) $(LTESTFLAGS) -o $@
 	@#gcc -std=c99 -I ../include/ test.c  -Wl,-rpath=../src/ -Wl,-rpath=../lib -L ../src/ -lcsip -L ../lib/ -lscipopt -lm
 
+ASTYLEOPTS	= --style=allman --indent=spaces=4 --indent-cases --pad-oper --pad-header --unpad-paren --align-pointer=name --add-brackets --max-code-length=80
+
+.PHONY: style
+style:
+	@astyle -q $(ASTYLEOPTS)  $(CSIPHEADER) $(CSIPSRC) $(TESTSRC)
