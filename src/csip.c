@@ -524,7 +524,19 @@ struct SCIP_ConshdlrData
     SCIP_SOL *sol;
 };
 
+SCIP_DECL_CONSFREE(consFreeLazy)
+{
+    SCIP_CONSHDLRDATA *conshdlrdata;
 
+    conshdlrdata = SCIPconshdlrGetData(conshdlr);
+    assert(conshdlrdata != NULL);
+
+    SCIPfreeMemory(scip, &conshdlrdata);
+
+    SCIPconshdlrSetData(conshdlr, NULL);
+
+    return SCIP_OKAY;
+}
 
 SCIP_DECL_CONSENFOLP(consEnfolpLazy)
 {
@@ -629,6 +641,8 @@ CSIP_RETCODE CSIPaddLazyCallback(CSIP_MODEL *model, CSIP_LAZYCALLBACK callback,
                      priority, -1, -1, FALSE,
                      consEnfolpLazy, consEnfopsLazy, consCheckLazy, consLockLazy,
                      conshdlrdata));
+
+    SCIP_in_CSIP( SCIPsetConshdlrFree(scip, conshdlr, consFreeLazy) );
     model->nlazycb += 1;
 
     return CSIP_RETCODE_OK;
