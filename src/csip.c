@@ -641,7 +641,7 @@ CSIP_RETCODE CSIPaddLazyCallback(CSIP_MODEL *model, CSIP_LAZYCALLBACK callback,
                      consEnfolpLazy, consEnfopsLazy, consCheckLazy, consLockLazy,
                      conshdlrdata));
 
-    SCIP_in_CSIP( SCIPsetConshdlrFree(scip, conshdlr, consFreeLazy) );
+    SCIP_in_CSIP(SCIPsetConshdlrFree(scip, conshdlr, consFreeLazy));
     model->nlazycb += 1;
 
     return CSIP_RETCODE_OK;
