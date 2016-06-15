@@ -1,12 +1,12 @@
+#include <assert.h>
 #include <stdio.h>
 #include <math.h>
 
 #include <csip.h>
 
 #include "minunit.h"
-int mu_tests_run = 0;
 
-static char *test_lp()
+static void test_lp()
 {
     /*
       Small LP:
@@ -50,10 +50,9 @@ static char *test_lp()
     mu_assert("Wrong solution!", fabs(solution[1] - 0.0) <= 1e-5);
 
     CHECK(CSIPfreeModel(m));
-    return 0;
 }
 
-static char *test_mip()
+static void test_mip()
 {
     /*
       Small MIP:
@@ -100,10 +99,9 @@ static char *test_mip()
     mu_assert("Wrong solution!", fabs(solution[4] - 1.0) <= 1e-5);
 
     CHECK(CSIPfreeModel(m));
-    return 0;
 }
 
-static char *test_mip2()
+static void test_mip2()
 {
     /*
       Small unbounded MIP:
@@ -130,10 +128,9 @@ static char *test_mip2()
                                 || solvestatus == CSIP_STATUS_INFORUNBD));
 
     CHECK(CSIPfreeModel(m));
-    return 0;
 }
 
-static char *test_mip3()
+static void test_mip3()
 {
     /*
       Small infeasible MIP:
@@ -161,10 +158,9 @@ static char *test_mip3()
     mu_assert("Wrong status!", solvestatus == CSIP_STATUS_INFEASIBLE);
 
     CHECK(CSIPfreeModel(m));
-    return 0;
 }
 
-static char *test_socp()
+static void test_socp()
 {
     /*
       min t
@@ -220,7 +216,6 @@ static char *test_socp()
     mu_assert("Wrong solution!", fabs(solution[2] - 0.5) <= sqrt(1e-5));
 
     CHECK(CSIPfreeModel(m));
-    return 0;
 }
 
 struct MyData
@@ -258,7 +253,7 @@ CSIP_RETCODE lazy_callback(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata)
  * which is unbounded, and for some scip-bug reason, it asserted some stuff
  * I am changing the problem to reflect Miles original vision
  */
-static char *test_lazy()
+static void test_lazy()
 {
 
     /*
@@ -305,7 +300,6 @@ static char *test_lazy()
     mu_assert("Wrong solution!", fabs(solution[1] - 2.0) <= 1e-5);
 
     CHECK(CSIPfreeModel(m));
-    return 0;
 }
 
 CSIP_RETCODE lazy_callback2(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata)
@@ -333,7 +327,7 @@ CSIP_RETCODE lazy_callback2(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata)
     return CSIP_RETCODE_OK;
 }
 
-static char *test_lazy2()
+static void test_lazy2()
 {
 
     /*
@@ -374,10 +368,9 @@ static char *test_lazy2()
     mu_assert("Wrong solution!", fabs(solution[0] - 10.0) <= 1e-5);
 
     CHECK(CSIPfreeModel(m));
-    return 0;
 }
 
-static char *test_objsense()
+static void test_objsense()
 {
     // min/max  x
     // st.      lb <= x <= ub
@@ -410,10 +403,9 @@ static char *test_objsense()
     mu_assert("Wrong objective value!", fabs(CSIPgetObjValue(m) - lb) <= 1e-5);
 
     CHECK(CSIPfreeModel(m));
-    return 0;
 }
 
-static char *test_sos1()
+static void test_sos1()
 {
     // max 2x + 3y + 4z
     //     SOS1(x, y, z)
@@ -437,10 +429,9 @@ static char *test_sos1()
     mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
     mu_assert("Wrong objective value!", fabs(CSIPgetObjValue(m) - 4.0) <= 1e-5);
     CHECK(CSIPfreeModel(m));
-    return 0;
 }
 
-static char *test_sos2()
+static void test_sos2()
 {
     // max 2x + 3y + 4z
     //     SOS2(x, y, z)
@@ -464,10 +455,9 @@ static char *test_sos2()
     mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
     mu_assert("Wrong objective value!", fabs(CSIPgetObjValue(m) - 7.0) <= 1e-5);
     CHECK(CSIPfreeModel(m));
-    return 0;
 }
 
-static char *test_sos1_sos2()
+static void test_sos1_sos2()
 {
     // max 2x + 3y + 4z
     //     SOS1(y, z)
@@ -493,10 +483,9 @@ static char *test_sos1_sos2()
     mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
     mu_assert("Wrong objective value!", fabs(CSIPgetObjValue(m) - 5.0) <= 1e-5);
     CHECK(CSIPfreeModel(m));
-    return 0;
 }
 
-static char *test_manythings()
+static void test_manythings()
 {
     // add many vars and conss to test variable sized array
     CSIP_MODEL *m;
@@ -513,7 +502,6 @@ static char *test_manythings()
         CHECK(CSIPaddLinCons(m, 1, indices, coefs, 0.0, 1.0, NULL));
     }
     CHECK(CSIPfreeModel(m));
-    return 0;
 }
 
 
@@ -535,7 +523,7 @@ CSIP_RETCODE doubly_lazy_cb(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata)
     return CSIP_RETCODE_OK;
 }
 
-static char *test_doublelazy()
+static void test_doublelazy()
 {
     // max x + 3y + z
     //     x + y + z <= 2
@@ -579,11 +567,12 @@ static char *test_doublelazy()
     mu_assert("Wrong solution!", fabs(solution[0] - 0.0) <= 1e-5);
 
     CHECK(CSIPfreeModel(m));
-    return 0;
 }
 
-static char *all_tests()
+int main(int argc, char **argv)
 {
+    printf("Running tests...\n");
+
     mu_run_test(test_lp);
     mu_run_test(test_mip);
     mu_run_test(test_mip2);
@@ -598,21 +587,6 @@ static char *all_tests()
     mu_run_test(test_manythings);
     mu_run_test(test_doublelazy);
 
+    printf("All tests passed!\n");
     return 0;
-}
-
-int main(int argc, char **argv)
-{
-    char *result = all_tests();
-    if (result != 0)
-    {
-        printf("%s\n", result);
-    }
-    else
-    {
-        printf("ALL TESTS PASSED\n");
-    }
-    printf("Tests run: %d\n", mu_tests_run);
-
-    return result != 0;
 }
