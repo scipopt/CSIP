@@ -43,11 +43,11 @@ static void test_lp()
     mu_assert("Wrong status!", solvestatus == CSIP_STATUS_OPTIMAL);
 
     double objval = CSIPgetObjValue(m);
-    mu_assert("Wrong objective value!", fabs(objval - (-0.75)) <= 1e-5);
+    mu_assert_near("Wrong objective value!", objval, -0.75);
 
     CHECK(CSIPgetVarValues(m, solution));
-    mu_assert("Wrong solution!", fabs(solution[0] - 0.75) <= 1e-5);
-    mu_assert("Wrong solution!", fabs(solution[1] - 0.0) <= 1e-5);
+    mu_assert_near("Wrong solution!", solution[0], 0.75);
+    mu_assert_near("Wrong solution!", solution[1], 0.0);
 
     CHECK(CSIPfreeModel(m));
 }
@@ -89,14 +89,14 @@ static void test_mip()
     mu_assert("Wrong status!", solvestatus == CSIP_STATUS_OPTIMAL);
 
     double objval = CSIPgetObjValue(m);
-    mu_assert("Wrong objective value!", fabs(objval - (-16.0)) <= 1e-5);
+    mu_assert_near("Wrong objective value!", objval, -16.0);
 
     CHECK(CSIPgetVarValues(m, solution));
-    mu_assert("Wrong solution!", fabs(solution[0] - 1.0) <= 1e-5);
-    mu_assert("Wrong solution!", fabs(solution[1] - 0.0) <= 1e-5);
-    mu_assert("Wrong solution!", fabs(solution[2] - 0.0) <= 1e-5);
-    mu_assert("Wrong solution!", fabs(solution[3] - 1.0) <= 1e-5);
-    mu_assert("Wrong solution!", fabs(solution[4] - 1.0) <= 1e-5);
+    mu_assert_near("Wrong solution!", solution[0], 1.0);
+    mu_assert_near("Wrong solution!", solution[1], 0.0);
+    mu_assert_near("Wrong solution!", solution[2], 0.0);
+    mu_assert_near("Wrong solution!", solution[3], 1.0);
+    mu_assert_near("Wrong solution!", solution[4], 1.0);
 
     CHECK(CSIPfreeModel(m));
 }
@@ -207,13 +207,14 @@ static void test_socp()
     mu_assert("Wrong status!", solvestatus == CSIP_STATUS_OPTIMAL);
 
     double objval = CSIPgetObjValue(m);
-    mu_assert("Wrong objective value!", fabs(objval - (sqrt(0.5))) <= 1e-5);
+    mu_assert_near("Wrong objective value!", objval, sqrt(0.5));
 
     CHECK(CSIPgetVarValues(m, solution));
 
-    mu_assert("Wrong solution!", fabs(solution[0] - sqrt(0.5)) <= 1e-5);
-    mu_assert("Wrong solution!", fabs(solution[1] - 0.5) <= sqrt(1e-5));
-    mu_assert("Wrong solution!", fabs(solution[2] - 0.5) <= sqrt(1e-5));
+    mu_assert_near("Wrong solution!", solution[0], sqrt(0.5));
+    // use weaker check, because of nonlinear constraint's abstol
+    mu_assert("Wrong solution!", fabs(solution[1] - 0.5) < 0.01);
+    mu_assert("Wrong solution!", fabs(solution[2] - 0.5) < 0.01);
 
     CHECK(CSIPfreeModel(m));
 }
@@ -292,12 +293,12 @@ static void test_lazy()
     mu_assert("Wrong status!", solvestatus == CSIP_STATUS_OPTIMAL);
 
     double objval = CSIPgetObjValue(m);
-    mu_assert("Wrong objective!", fabs(objval - 2.5) <= 1e-5);
+    mu_assert_near("Wrong objective!", objval, 2.5);
 
     CHECK(CSIPgetVarValues(m, solution));
 
-    mu_assert("Wrong solution!", fabs(solution[0] - 1.0) <= 1e-5);
-    mu_assert("Wrong solution!", fabs(solution[1] - 2.0) <= 1e-5);
+    mu_assert_near("Wrong solution!", solution[0], 1.0);
+    mu_assert_near("Wrong solution!", solution[1], 2.0);
 
     CHECK(CSIPfreeModel(m));
 }
@@ -362,10 +363,10 @@ static void test_lazy2()
     mu_assert("Wrong status!", solvestatus == CSIP_STATUS_OPTIMAL);
 
     double objval = CSIPgetObjValue(m);
-    mu_assert("Wrong objective value!", fabs(objval - (-10)) <= 1e-5);
+    mu_assert_near("Wrong objective value!", objval, -10);
 
     CHECK(CSIPgetVarValues(m, solution));
-    mu_assert("Wrong solution!", fabs(solution[0] - 10.0) <= 1e-5);
+    mu_assert_near("Wrong solution!", solution[0], 10.0);
 
     CHECK(CSIPfreeModel(m));
 }
@@ -388,19 +389,19 @@ static void test_objsense()
     // default sense is 'minimize'
     CHECK(CSIPsolve(m));
     mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
-    mu_assert("Wrong objective value!", fabs(CSIPgetObjValue(m) - lb) <= 1e-5);
+    mu_assert_near("Wrong objective value!", CSIPgetObjValue(m), lb);
 
     // change sense to 'maximize'
     CHECK(CSIPsetSenseMaximize(m));
     CHECK(CSIPsolve(m));
     mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
-    mu_assert("Wrong objective value!", fabs(CSIPgetObjValue(m) - ub) <= 1e-5);
+    mu_assert_near("Wrong objective value!", CSIPgetObjValue(m), ub);
 
     // change sense to 'minimize'
     CHECK(CSIPsetSenseMinimize(m));
     CHECK(CSIPsolve(m));
     mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
-    mu_assert("Wrong objective value!", fabs(CSIPgetObjValue(m) - lb) <= 1e-5);
+    mu_assert_near("Wrong objective value!", CSIPgetObjValue(m), lb);
 
     CHECK(CSIPfreeModel(m));
 }
@@ -427,7 +428,7 @@ static void test_sos1()
     CHECK(CSIPsetObj(m, 3, objindices, objcoef));
     CHECK(CSIPsolve(m));
     mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
-    mu_assert("Wrong objective value!", fabs(CSIPgetObjValue(m) - 4.0) <= 1e-5);
+    mu_assert_near("Wrong objective value!", CSIPgetObjValue(m), 4.0);
     CHECK(CSIPfreeModel(m));
 }
 
@@ -453,7 +454,7 @@ static void test_sos2()
     CHECK(CSIPsetObj(m, 3, objindices, objcoef));
     CHECK(CSIPsolve(m));
     mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
-    mu_assert("Wrong objective value!", fabs(CSIPgetObjValue(m) - 7.0) <= 1e-5);
+    mu_assert_near("Wrong objective value!", CSIPgetObjValue(m), 7.0);
     CHECK(CSIPfreeModel(m));
 }
 
@@ -481,7 +482,7 @@ static void test_sos1_sos2()
     CHECK(CSIPsetObj(m, 3, objindices, objcoef));
     CHECK(CSIPsolve(m));
     mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
-    mu_assert("Wrong objective value!", fabs(CSIPgetObjValue(m) - 5.0) <= 1e-5);
+    mu_assert_near("Wrong objective value!", CSIPgetObjValue(m), 5.0);
     CHECK(CSIPfreeModel(m));
 }
 
@@ -559,12 +560,12 @@ static void test_doublelazy()
 
     CHECK(CSIPsolve(m));
     mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
-    mu_assert("Wrong objective value!", fabs(CSIPgetObjValue(m) - 3.0) <= 1e-5);
+    mu_assert_near("Wrong objective value!", CSIPgetObjValue(m), 3.0);
 
     CHECK(CSIPgetVarValues(m, solution));
-    mu_assert("Wrong solution!", fabs(solution[0] - 0.0) <= 1e-5);
-    mu_assert("Wrong solution!", fabs(solution[1] - 1.0) <= 1e-5);
-    mu_assert("Wrong solution!", fabs(solution[0] - 0.0) <= 1e-5);
+    mu_assert_near("Wrong solution!", solution[0], 0.0);
+    mu_assert_near("Wrong solution!", solution[1], 1.0);
+    mu_assert_near("Wrong solution!", solution[0], 0.0);
 
     CHECK(CSIPfreeModel(m));
 }
