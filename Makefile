@@ -103,3 +103,8 @@ ASTYLEOPTS	= --style=allman --indent=spaces=4 --indent-cases --pad-oper --pad-he
 .PHONY: style
 style:
 	@astyle -q $(ASTYLEOPTS)  $(CSIPHEADER) $(CSIPSRC) $(TESTSRC)
+
+.PHONY: valgrind
+valgrind:
+	@valgrind --track-origins=yes --leak-check=full --show-leak-kinds=all $(TESTBIN)
+
