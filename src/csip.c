@@ -719,13 +719,12 @@ CSIP_RETCODE CSIPcbAddLinCons(CSIP_CBDATA *cbdata, int numindices, int *indices,
 
     if (!cbdata->checkonly)
     {
-        CSIP_CALL(addCons(cbdata->model, cons, NULL));
+        /* we do not store cons, because the original problem does not contain them;
+         * and there is an issue when freeTransform is called
+         */
+        SCIP_in_CSIP(SCIPaddCons(scip, cons));
     }
-    else
-    {
-        /* since we are not adding the cons, we need to release it now */
-        SCIP_in_CSIP(SCIPreleaseCons(cbdata->model->scip, &cons));
-    }
+    SCIP_in_CSIP(SCIPreleaseCons(cbdata->model->scip, &cons));
 
     return CSIP_RETCODE_OK;
 }
