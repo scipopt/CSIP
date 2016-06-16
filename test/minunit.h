@@ -11,8 +11,23 @@
     }                                        \
 } while (0)
 
-#define mu_assert_near(message, test, expect)          \
-    mu_assert(message, fabs((test) - (expect) <= TOL))
+#define mu_assert_int(message, value, expected) do {      \
+    if (value != expected)                                \
+    {                                                     \
+        printf("   failed: %s (got: %d, expected: %d)\n", \
+               message, value, expected);                 \
+        assert(value == expected);                        \
+    }                                                     \
+} while (0)
+
+#define mu_assert_near(message, value, expected) do  {    \
+    if (fabs((value) - (expected)) > TOL)                 \
+    {                                                     \
+        printf("   failed: %s (got: %f, expected: %f)\n", \
+               message, value, expected);                 \
+        assert(fabs((value) - (expected)) <= TOL);        \
+    }                                                     \
+} while (0)
 
 #define mu_run_test(test) do { \
     printf("  %s\n", #test);   \
