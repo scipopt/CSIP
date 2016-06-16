@@ -314,7 +314,8 @@ CSIP_RETCODE lazy_callback2(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata)
 
     CSIPcbGetVarValues(cb, data->storage);
     // make sure we didn't get a fractional solution
-    mu_assert_near("fractional not working", data->storage[0], round(data->storage[0]));
+    mu_assert_near("fractional not working", data->storage[0],
+                   round(data->storage[0]));
 
     // always add the cut x <= 10
     CSIPcbAddLinCons(cb, 1, indices, coef, -INFINITY, 10.5, 0);

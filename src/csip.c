@@ -461,7 +461,7 @@ CSIP_RETCODE CSIPsolve(CSIP_MODEL *model)
 
 CSIP_STATUS CSIPgetStatus(CSIP_MODEL *model)
 {
-   return model->status;
+    return model->status;
 }
 
 double CSIPgetObjValue(CSIP_MODEL *model)
