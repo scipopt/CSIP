@@ -307,20 +307,14 @@ CSIP_RETCODE lazy_callback2(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata)
 {
 
     struct MyData *data = (struct MyData *) userdata;
-    if (data->foo != 10)
-    {
-        return CSIP_RETCODE_ERROR;
-    }
+    mu_assert("userdata failing", data->foo != 0);
 
     int indices[] = {0};
     double coef[] = {1.0};
 
     CSIPcbGetVarValues(cb, data->storage);
     // make sure we didn't get a fractional solution
-    if (data->storage[0] - round(data->storage[0]) > 1e-4)
-    {
-        return CSIP_RETCODE_ERROR;
-    }
+    mu_assert_near("fractional not working", data->storage[0], round(data->storage[0]));
 
     // always add the cut x <= 10
     CSIPcbAddLinCons(cb, 1, indices, coef, -INFINITY, 10.5, 0);
