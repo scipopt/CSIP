@@ -56,21 +56,67 @@ static inline int retCodeCSIPtoSCIP(int csipRetCode)
 struct csip_model
 {
     SCIP *scip;
+
     // variable sized array for variables
     int nvars;
     int varssize;
     SCIP_VAR **vars;
+
     // variable sized array for constraints
     int nconss;
     int consssize;
     SCIP_CONS **conss;
+
     // counter for callback
     int nlazycb;
+
+    CSIP_STATUS status;
 };
 
 /*
  * local methods
  */
+
+static
+CSIP_STATUS getStatus(CSIP_MODEL *model)
+{
+    SCIP_STATUS status = SCIPgetStatus(model->scip);
+    switch (status)
+    {
+    case SCIP_STATUS_UNKNOWN:
+        return CSIP_STATUS_UNKNOWN;
+    case SCIP_STATUS_USERINTERRUPT:
+        return CSIP_STATUS_USERLIMIT;
+    case SCIP_STATUS_NODELIMIT:
+        return CSIP_STATUS_NODELIMIT;
+    case SCIP_STATUS_TOTALNODELIMIT:
+        return CSIP_STATUS_NODELIMIT;
+    case SCIP_STATUS_STALLNODELIMIT:
+        return CSIP_STATUS_USERLIMIT;
+    case SCIP_STATUS_TIMELIMIT:
+        return CSIP_STATUS_TIMELIMIT;
+    case SCIP_STATUS_MEMLIMIT:
+        return CSIP_STATUS_MEMLIMIT;
+    case SCIP_STATUS_GAPLIMIT:
+        return CSIP_STATUS_USERLIMIT;
+    case SCIP_STATUS_SOLLIMIT:
+        return CSIP_STATUS_USERLIMIT;
+    case SCIP_STATUS_BESTSOLLIMIT:
+        return CSIP_STATUS_USERLIMIT;
+    case SCIP_STATUS_RESTARTLIMIT:
+        return CSIP_STATUS_USERLIMIT;
+    case SCIP_STATUS_OPTIMAL:
+        return CSIP_STATUS_OPTIMAL;
+    case SCIP_STATUS_INFEASIBLE:
+        return CSIP_STATUS_INFEASIBLE;
+    case SCIP_STATUS_UNBOUNDED:
+        return CSIP_STATUS_UNBOUNDED;
+    case SCIP_STATUS_INFORUNBD:
+        return CSIP_STATUS_INFORUNBD;
+    default:
+        return CSIP_STATUS_UNKNOWN;
+    }
+}
 
 static
 CSIP_RETCODE createLinCons(CSIP_MODEL *model, int numindices, int *indices,
@@ -390,12 +436,6 @@ CSIP_RETCODE CSIPsetObj(CSIP_MODEL *model, int numindices, int *indices,
 
 CSIP_RETCODE CSIPsetSenseMinimize(CSIP_MODEL *model)
 {
-    // TODO: Is this the proper way to get back to the proper stage? We
-    //       want to be able to change the problem and resolve now. But
-    //       if we call SCIPfreeTransform after SCIPsolve, the results
-    //       will be gone.
-    SCIP_in_CSIP(SCIPfreeTransform(model->scip));
-
     SCIP_in_CSIP(SCIPsetObjsense(model->scip, SCIP_OBJSENSE_MINIMIZE));
 
     return CSIP_RETCODE_OK;
@@ -403,9 +443,6 @@ CSIP_RETCODE CSIPsetSenseMinimize(CSIP_MODEL *model)
 
 CSIP_RETCODE CSIPsetSenseMaximize(CSIP_MODEL *model)
 {
-    // TODO: Is this the proper way to get back to the proper stage?
-    SCIP_in_CSIP(SCIPfreeTransform(model->scip));
-
     SCIP_in_CSIP(SCIPsetObjsense(model->scip, SCIP_OBJSENSE_MAXIMIZE));
 
     return CSIP_RETCODE_OK;
@@ -414,48 +451,17 @@ CSIP_RETCODE CSIPsetSenseMaximize(CSIP_MODEL *model)
 CSIP_RETCODE CSIPsolve(CSIP_MODEL *model)
 {
     SCIP_in_CSIP(SCIPsolve(model->scip));
+    model->status = getStatus(model);
+
+    SCIP_in_CSIP(SCIPfreeTransform(model->scip));
 
     return CSIP_RETCODE_OK;
 }
 
+
 CSIP_STATUS CSIPgetStatus(CSIP_MODEL *model)
 {
-    SCIP_STATUS status = SCIPgetStatus(model->scip);
-    switch (status)
-    {
-    case SCIP_STATUS_UNKNOWN:
-        return CSIP_STATUS_UNKNOWN;
-    case SCIP_STATUS_USERINTERRUPT:
-        return CSIP_STATUS_USERLIMIT;
-    case SCIP_STATUS_NODELIMIT:
-        return CSIP_STATUS_NODELIMIT;
-    case SCIP_STATUS_TOTALNODELIMIT:
-        return CSIP_STATUS_NODELIMIT;
-    case SCIP_STATUS_STALLNODELIMIT:
-        return CSIP_STATUS_USERLIMIT;
-    case SCIP_STATUS_TIMELIMIT:
-        return CSIP_STATUS_TIMELIMIT;
-    case SCIP_STATUS_MEMLIMIT:
-        return CSIP_STATUS_MEMLIMIT;
-    case SCIP_STATUS_GAPLIMIT:
-        return CSIP_STATUS_USERLIMIT;
-    case SCIP_STATUS_SOLLIMIT:
-        return CSIP_STATUS_USERLIMIT;
-    case SCIP_STATUS_BESTSOLLIMIT:
-        return CSIP_STATUS_USERLIMIT;
-    case SCIP_STATUS_RESTARTLIMIT:
-        return CSIP_STATUS_USERLIMIT;
-    case SCIP_STATUS_OPTIMAL:
-        return CSIP_STATUS_OPTIMAL;
-    case SCIP_STATUS_INFEASIBLE:
-        return CSIP_STATUS_INFEASIBLE;
-    case SCIP_STATUS_UNBOUNDED:
-        return CSIP_STATUS_UNBOUNDED;
-    case SCIP_STATUS_INFORUNBD:
-        return CSIP_STATUS_INFORUNBD;
-    default:
-        return CSIP_STATUS_UNKNOWN;
-    }
+   return model->status;
 }
 
 double CSIPgetObjValue(CSIP_MODEL *model)
