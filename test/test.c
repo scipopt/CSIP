@@ -541,7 +541,7 @@ static void test_doublelazy()
     CHECK(CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL));   // x
     CHECK(CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL));   // y
     CHECK(CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL));   // z
-    CHECK(CSIPaddLinCons(m, 1, indices, lincoef, -INFINITY, 2.0, NULL));
+    CHECK(CSIPaddLinCons(m, 3, indices, lincoef, -INFINITY, 2.0, NULL));
     CHECK(CSIPsetSenseMaximize(m));
     CHECK(CSIPsetObj(m, 3, indices, objcoef));
 
@@ -560,7 +560,66 @@ static void test_doublelazy()
     CHECK(CSIPgetVarValues(m, solution));
     mu_assert_near("Wrong solution!", solution[0], 0.0);
     mu_assert_near("Wrong solution!", solution[1], 1.0);
+    mu_assert_near("Wrong solution!", solution[2], 0.0);
+
+    CHECK(CSIPfreeModel(m));
+}
+
+static void test_changeprob()
+{
+    // solve two problems in a row:
+    //
+    // max x + 2y
+    //     x + y <= 1
+    //     x, y binary
+    //
+    // --> (0, 1)
+    //
+    // max x + 2y + 2z
+    //     x + y <= 1
+    //     x + y + z <= 2
+    //     y + z <= 1
+    //     x, y, z binary
+    //
+    // --> (1, 0, 1)
+
+    CSIP_MODEL *m;
+    int indices[] = {0, 1, 2};
+    double lincoef[] = {1.0, 1.0, 1.0};
+    double objcoef[] = {1.0, 2.0, 2.0};
+    double solution[3];
+
+    CHECK(CSIPcreateModel(&m));
+    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+
+    // first problem
+    CHECK(CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_BINARY, NULL)); // x
+    CHECK(CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_BINARY, NULL)); // y
+    CHECK(CSIPaddLinCons(m, 2, indices, lincoef, -INFINITY, 1.0, NULL));
+    CHECK(CSIPsetSenseMaximize(m));
+    CHECK(CSIPsetObj(m, 2, indices, objcoef));
+
+    CHECK(CSIPsolve(m));
+    mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
+    mu_assert_near("Wrong objective value!", CSIPgetObjValue(m), 2.0);
+
+    CHECK(CSIPgetVarValues(m, solution));
     mu_assert_near("Wrong solution!", solution[0], 0.0);
+    mu_assert_near("Wrong solution!", solution[1], 1.0);
+
+    // second problem, modifying the first
+    CHECK(CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_BINARY, NULL));   // z
+    CHECK(CSIPaddLinCons(m, 3, indices, lincoef, -INFINITY, 2.0, NULL));
+    CHECK(CSIPaddLinCons(m, 2, indices + 1, lincoef, -INFINITY, 1.0, NULL));
+
+    CHECK(CSIPsolve(m));
+    mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
+    mu_assert_near("Wrong objective value!", CSIPgetObjValue(m), 3.0);
+
+    CHECK(CSIPgetVarValues(m, solution));
+    mu_assert_near("Wrong solution!", solution[0], 1.0);
+    mu_assert_near("Wrong solution!", solution[1], 0.0);
+    mu_assert_near("Wrong solution!", solution[2], 1.0);
 
     CHECK(CSIPfreeModel(m));
 }
@@ -582,6 +641,7 @@ int main(int argc, char **argv)
     mu_run_test(test_sos1_sos2);
     mu_run_test(test_manythings);
     mu_run_test(test_doublelazy);
+    mu_run_test(test_changeprob);
 
     printf("All tests passed!\n");
     return 0;
