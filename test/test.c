@@ -625,6 +625,42 @@ static void test_changeprob()
     CHECK(CSIPfreeModel(m));
 }
 
+static void test_initialsol()
+{
+    // attempt to solve a problem, but specify limits such that only the
+    // user-defined initial solution is found
+    //
+    // min 2x
+    //     x in [10, 100], integer
+
+    CSIP_MODEL *m;
+    int indices[] = {0};
+    double objcoef[] = {2.0};
+    double solution[1];
+
+    double initialsol[] = {23.0};
+
+    CHECK(CSIPcreateModel(&m));
+    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+    CHECK(CSIPsetParameter(m, "limits/solutions", 1));
+    CHECK(CSIPsetParameter(m, "heuristics/trivial/freq", -1));
+
+    CHECK(CSIPaddVar(m, 10.0, 100.0, CSIP_VARTYPE_INTEGER, NULL)); // x
+    CHECK(CSIPsetObj(m, 1, indices, objcoef));
+
+    CHECK(CSIPsetInitialSolution(m, initialsol));
+
+
+    CHECK(CSIPsolve(m));
+    mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_USERLIMIT);
+    mu_assert_near("Wrong objective value!", CSIPgetObjValue(m), 46.0);
+
+    CHECK(CSIPgetVarValues(m, solution));
+    mu_assert_near("Wrong solution!", solution[0], 23.0);
+
+    CHECK(CSIPfreeModel(m));
+}
+
 int main(int argc, char **argv)
 {
     printf("Running tests...\n");
@@ -643,6 +679,7 @@ int main(int argc, char **argv)
     mu_run_test(test_manythings);
     mu_run_test(test_doublelazy);
     mu_run_test(test_changeprob);
+    mu_run_test(test_initialsol);
 
     printf("All tests passed!\n");
     return 0;

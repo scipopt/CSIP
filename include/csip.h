@@ -116,6 +116,10 @@ CSIP_RETCODE CSIPsetParameterGeneric(
 // Get the number of variables added to the model.
 int CSIPgetNumVars(CSIP_MODEL *model);
 
+// Supply a solution (as a dense array) to be checked at the beginning of the
+// solving process. Only complete solutions are supported.
+CSIP_RETCODE CSIPsetInitialSolution(CSIP_MODEL *model, double *values);
+
 /* callback functions */
 
 typedef struct SCIP_ConshdlrData CSIP_CBDATA;

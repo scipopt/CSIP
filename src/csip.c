@@ -74,6 +74,9 @@ struct csip_model
     // store the user-defined optimization sense, because SCIP always minimizes
     SCIP_OBJSENSE sense;
 
+    // user-defined solution, is checked before solving
+    SCIP_SOL *initialsol;
+
     // store the optimization status (for after freeTransform)
     CSIP_STATUS status;
 };
@@ -234,6 +237,7 @@ CSIP_RETCODE CSIPcreateModel(CSIP_MODEL **modelptr)
 
     model->nlazycb = 0;
     model->sense = SCIP_OBJSENSE_MINIMIZE;
+    model->initialsol = NULL;
     model->status = CSIP_STATUS_UNKNOWN;
 
     CSIP_CALL(CSIPsetParameter(model, "display/width", 80));
@@ -244,6 +248,11 @@ CSIP_RETCODE CSIPcreateModel(CSIP_MODEL **modelptr)
 CSIP_RETCODE CSIPfreeModel(CSIP_MODEL *model)
 {
     int i;
+
+    if (model->initialsol != NULL) // solve was not called?
+    {
+        SCIP_in_CSIP(SCIPfreeSol(model->scip, &model->initialsol));
+    }
 
     /* SCIPreleaseVar sets the given pointer to NULL. However, this pointer is
      * needed when SCIPfree is called, because it will call the lock method again
@@ -475,6 +484,13 @@ CSIP_RETCODE CSIPsolve(CSIP_MODEL *model)
     // the stored solutions will be messed up after the freeTransform :-(
     CSIP_CALL(reformSenseMinimize(model));
 
+    // add initial solution
+    if (model->initialsol != NULL)
+    {
+        unsigned int stored;
+        SCIP_in_CSIP(SCIPaddSolFree(model->scip, &model->initialsol, &stored));
+    }
+
     SCIP_in_CSIP(SCIPsolve(model->scip));
     model->status = getStatus(model);
 
@@ -536,6 +552,26 @@ CSIP_RETCODE CSIPsetParameterGeneric(
 int CSIPgetNumVars(CSIP_MODEL *model)
 {
     return model->nvars;
+}
+
+CSIP_RETCODE CSIPsetInitialSolution(CSIP_MODEL *model, double *values)
+{
+    if (model->initialsol != NULL) // was solution already given?
+    {
+        SCIP_in_CSIP(SCIPfreeSol(model->scip, &model->initialsol));
+    }
+    assert(model->initialsol == NULL);
+
+    // create new solution object
+    SCIP_in_CSIP(SCIPcreateSol(model->scip, &model->initialsol, NULL));
+
+    // copy the given values
+    SCIP_in_CSIP(SCIPsetSolVals(model->scip, model->initialsol, model->nvars,
+                                model->vars, values));
+
+    // it will be given to SCIP in the CSIPsolve
+
+    return CSIP_RETCODE_OK;
 }
 
 void *CSIPgetInternalSCIP(CSIP_MODEL *model)
