@@ -358,7 +358,7 @@ static void test_lazy2()
     mu_assert("Wrong status!", solvestatus == CSIP_STATUS_OPTIMAL);
 
     double objval = CSIPgetObjValue(m);
-    mu_assert_near("Wrong objective value!", objval, -10);
+    mu_assert_near("Wrong objective value!", objval, -10.0);
 
     CHECK(CSIPgetVarValues(m, solution));
     mu_assert_near("Wrong solution!", solution[0], 10.0);
