@@ -120,7 +120,7 @@ int CSIPgetNumVars(CSIP_MODEL *model);
 // solving process. Only complete solutions are supported.
 CSIP_RETCODE CSIPsetInitialSolution(CSIP_MODEL *model, double *values);
 
-/* callback functions */
+/* lazy constraint callback functions */
 
 typedef struct SCIP_ConshdlrData CSIP_CBDATA;
 
@@ -144,6 +144,27 @@ typedef CSIP_RETCODE(*CSIP_LAZYCALLBACK)(
 // You may use userdata to pass any data.
 CSIP_RETCODE CSIPaddLazyCallback(
     CSIP_MODEL *model, CSIP_LAZYCALLBACK cb, int fractional, void *userdata);
+
+/* heuristic callback functions */
+
+typedef struct SCIP_HeurData CSIP_HEURDATA;
+
+// signature for heuristic callbacks.
+// must only call `CSIPheur*` methods from within callback, passing `heurdata`.
+typedef CSIP_RETCODE(*CSIP_HEURCALLBACK)(
+    CSIP_MODEL *model, CSIP_HEURDATA *cbdata, void *userdata);
+
+// Copy values of solution to output array. Call this function from your
+// heuristic callback. Solution is LP relaxation of current node.
+CSIP_RETCODE CSIPheurGetVarValues(CSIP_HEURDATA *heurdata, double *output);
+
+// Supply a solution (as a dense array). Only complete solutions are supported.
+CSIP_RETCODE CSIPheurSetSolution(CSIP_HEURDATA *heurdata, double *values);
+
+// Add a heuristic callback to the model.
+// You may use userdata to pass any data.
+CSIP_RETCODE CSIPaddHeuristicCallback(
+    CSIP_MODEL *model, CSIP_HEURCALLBACK heur, void *userdata);
 
 /* advanced usage */
 

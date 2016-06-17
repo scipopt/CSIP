@@ -68,8 +68,9 @@ struct csip_model
     int consssize;
     SCIP_CONS **conss;
 
-    // counter for callback
+    // counter for callbacks
     int nlazycb;
+    int nheur;
 
     // store the user-defined optimization sense, because SCIP always minimizes
     SCIP_OBJSENSE sense;
@@ -236,6 +237,7 @@ CSIP_RETCODE CSIPcreateModel(CSIP_MODEL **modelptr)
     }
 
     model->nlazycb = 0;
+    model->nheur = 0;
     model->sense = SCIP_OBJSENSE_MINIMIZE;
     model->initialsol = NULL;
     model->status = CSIP_STATUS_UNKNOWN;
@@ -796,6 +798,109 @@ CSIP_RETCODE CSIPcbAddLinCons(CSIP_CBDATA *cbdata, int numindices, int *indices,
         SCIP_in_CSIP(SCIPaddCons(scip, cons));
     }
     SCIP_in_CSIP(SCIPreleaseCons(cbdata->model->scip, &cons));
+
+    return CSIP_RETCODE_OK;
+}
+
+/* Heuristic Plugin */
+
+struct SCIP_HeurData
+{
+    CSIP_MODEL *model;
+    CSIP_HEURCALLBACK callback;
+    void *userdata;
+    SCIP_HEUR *heur;
+    SCIP_SOL *sol;
+};
+
+static
+SCIP_DECL_HEURFREE(heurFreeUser)
+{
+    SCIP_HEURDATA *heurdata;
+
+    heurdata = SCIPheurGetData(heur);
+    assert(heurdata != NULL);
+
+    SCIPfreeMemory(scip, &heurdata);
+    SCIPheurSetData(heur, NULL);
+
+    return SCIP_OKAY;
+}
+
+static
+SCIP_DECL_HEUREXEC(heurExecUser)
+{
+    SCIP_HEURDATA *heurdata = SCIPheurGetData(heur);
+    assert(heurdata != NULL);
+
+    *result = SCIP_DIDNOTFIND;
+    assert(heurdata->sol == NULL);
+
+    CSIP_in_SCIP(heurdata->callback(heurdata->model, heurdata,
+                                    heurdata->userdata));
+
+    if (heurdata->sol != NULL)
+    {
+        unsigned int stored = 0;
+        SCIP_CALL(SCIPtrySolFree(heurdata->model->scip, &heurdata->sol,
+                                 FALSE, TRUE, TRUE, TRUE, &stored));
+        if (stored)
+        {
+            *result = SCIP_FOUNDSOL;
+        }
+    }
+    assert(heurdata->sol == NULL);
+
+    return SCIP_OKAY;
+}
+
+// Copy values of solution to output array. Call this function from your
+// heuristic callback. Solution is LP relaxation of current node.
+CSIP_RETCODE CSIPheurGetVarValues(CSIP_HEURDATA *heurdata, double *output)
+{
+    CSIP_MODEL *model = heurdata->model;
+    SCIP_in_CSIP(SCIPgetSolVals(model->scip, NULL, model->nvars, model->vars,
+                                output));
+    return CSIP_RETCODE_OK;
+}
+
+// Supply a solution (as a dense array). Only complete solutions are supported.
+CSIP_RETCODE CSIPheurSetSolution(CSIP_HEURDATA *heurdata, double *values)
+{
+    CSIP_MODEL *model = heurdata->model;
+    SCIP_in_CSIP(SCIPcreateSol(model->scip, &heurdata->sol, heurdata->heur));
+    SCIP_in_CSIP(SCIPsetSolVals(model->scip, heurdata->sol, model->nvars,
+                                model->vars, values));
+    return CSIP_RETCODE_OK;
+}
+
+// Add a heuristic callback to the model.
+// You may use userdata to pass any data.
+CSIP_RETCODE CSIPaddHeuristicCallback(
+    CSIP_MODEL *model, CSIP_HEURCALLBACK callback, void *userdata)
+{
+    SCIP_HEURDATA *heurdata;
+    SCIP_HEUR *heur;
+    SCIP *scip;
+    char name[SCIP_MAXSTRLEN];
+
+    scip = model->scip;
+
+    SCIP_in_CSIP(SCIPallocMemory(scip, &heurdata));
+
+    SCIPsnprintf(name, SCIP_MAXSTRLEN, "heur_%d", model->nheur);
+    SCIP_in_CSIP(SCIPincludeHeurBasic(
+                     scip, &heur, name, "heuristic callback", 'x',
+                     1, 1, 0, -1, SCIP_HEURTIMING_AFTERNODE, FALSE,
+                     heurExecUser, heurdata));
+    heurdata->model = model;
+    heurdata->callback = callback;
+    heurdata->userdata = userdata;
+    heurdata->sol = NULL;
+    heurdata->heur = heur;
+
+    SCIP_in_CSIP(SCIPsetHeurFree(scip, heur, heurFreeUser));
+    model->nheur += 1;
 
     return CSIP_RETCODE_OK;
 }

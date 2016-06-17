@@ -661,6 +661,63 @@ static void test_initialsol()
     CHECK(CSIPfreeModel(m));
 }
 
+CSIP_RETCODE heurcb(CSIP_MODEL *model, CSIP_HEURDATA *cbdata, void *userdata)
+{
+    double sol[] = {2.0, 2.0};
+    mu_assert("Invalid userdata", userdata == NULL);
+    CHECK(CSIPheurSetSolution(cbdata, sol));
+    return CSIP_RETCODE_OK;
+}
+
+static void test_heurcb()
+{
+    // attempt to solve a problem, but specify limits such that only the
+    // solution given from the heuristic callback is found
+    //
+    // min x + y
+    //     2x + 3y >= 6
+    //     3x + 2y >= 6
+    //     x,y in [0, 3] integer
+
+    CSIP_MODEL *m;
+    int indices[] = {0, 1};
+    double objcoef[] = {1.0, 1.0};
+    double coef1[] = {2.0, 3.0};
+    double coef2[] = {3.0, 2.0};
+    double solution[2];
+
+    CHECK(CSIPcreateModel(&m));
+    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+    CHECK(CSIPsetParameter(m, "limits/solutions", 1));
+    CHECK(CSIPsetParameter(m, "heuristics/feaspump/freq", -1));
+    CHECK(CSIPsetParameter(m, "heuristics/randrounding/freq", -1));
+    CHECK(CSIPsetParameter(m, "heuristics/rounding/freq", -1));
+    CHECK(CSIPsetParameter(m, "heuristics/shiftandpropagate/freq", -1));
+    CHECK(CSIPsetParameter(m, "heuristics/shifting/freq", -1));
+    CHECK(CSIPsetParameter(m, "heuristics/simplerounding/freq", -1));
+    CHECK(CSIPsetParameter(m, "heuristics/trivial/freq", -1));
+    CHECK(CSIPsetParameter(m, "presolving/maxrounds", 0));
+    CHECK(CSIPsetParameter(m, "separating/maxroundsroot", 0));
+
+    CHECK(CSIPaddVar(m, 0.0, 3.0, CSIP_VARTYPE_INTEGER, NULL)); // x
+    CHECK(CSIPaddVar(m, 0.0, 3.0, CSIP_VARTYPE_INTEGER, NULL)); // y
+    CHECK(CSIPaddLinCons(m, 2, indices, coef1, 6.0, INFINITY, NULL));
+    CHECK(CSIPaddLinCons(m, 2, indices, coef2, 6.0, INFINITY, NULL));
+    CHECK(CSIPsetObj(m, 2, indices, objcoef));
+
+    CHECK(CSIPaddHeuristicCallback(m, heurcb, NULL));
+
+    CHECK(CSIPsolve(m));
+    mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_USERLIMIT);
+    mu_assert_near("Wrong objective value!", CSIPgetObjValue(m), 4.0);
+
+    CHECK(CSIPgetVarValues(m, solution));
+    mu_assert_near("Wrong solution!", solution[0], 2.0);
+    mu_assert_near("Wrong solution!", solution[1], 2.0);
+
+    CHECK(CSIPfreeModel(m));
+}
+
 int main(int argc, char **argv)
 {
     printf("Running tests...\n");
@@ -680,6 +737,7 @@ int main(int argc, char **argv)
     mu_run_test(test_doublelazy);
     mu_run_test(test_changeprob);
     mu_run_test(test_initialsol);
+    mu_run_test(test_heurcb);
 
     printf("All tests passed!\n");
     return 0;
