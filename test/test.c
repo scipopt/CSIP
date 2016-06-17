@@ -611,6 +611,7 @@ static void test_changeprob()
     CHECK(CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_BINARY, NULL));   // z
     CHECK(CSIPaddLinCons(m, 3, indices, lincoef, -INFINITY, 2.0, NULL));
     CHECK(CSIPaddLinCons(m, 2, indices + 1, lincoef, -INFINITY, 1.0, NULL));
+    CHECK(CSIPsetObj(m, 3, indices, objcoef));
 
     CHECK(CSIPsolve(m));
     mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
@@ -635,13 +636,13 @@ int main(int argc, char **argv)
     mu_run_test(test_socp);
     mu_run_test(test_lazy);
     mu_run_test(test_lazy2);
-    /* mu_run_test(test_objsense); */
+    mu_run_test(test_objsense);
     mu_run_test(test_sos1);
     mu_run_test(test_sos2);
     mu_run_test(test_sos1_sos2);
     mu_run_test(test_manythings);
     mu_run_test(test_doublelazy);
-    /* mu_run_test(test_changeprob); */
+    mu_run_test(test_changeprob);
 
     printf("All tests passed!\n");
     return 0;

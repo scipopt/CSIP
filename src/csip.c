@@ -480,6 +480,9 @@ CSIP_RETCODE CSIPsolve(CSIP_MODEL *model)
 
     SCIP_in_CSIP(SCIPfreeTransform(model->scip));
 
+    // reset the objective (might be negated)
+    CSIP_CALL(reformSenseMinimize(model));
+
     return CSIP_RETCODE_OK;
 }
 
