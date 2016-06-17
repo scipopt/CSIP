@@ -1,6 +1,7 @@
 #include "csip.h"
 #include "scip/scip.h"
 #include "scip/pub_misc.h"
+#include "scip/pub_var.h"
 #include "scip/scipdefplugins.h"
 
 // map return codes: SCIP -> CSIP
@@ -70,6 +71,10 @@ struct csip_model
     // counter for callback
     int nlazycb;
 
+    // store the user-defined optimization sense, because SCIP always minimizes
+    SCIP_OBJSENSE sense;
+
+    // store the optimization status (for after freeTransform)
     CSIP_STATUS status;
 };
 
@@ -176,6 +181,22 @@ CSIP_RETCODE addCons(CSIP_MODEL *model, SCIP_CONS *cons, int *idx)
     return CSIP_RETCODE_OK;
 }
 
+CSIP_RETCODE reformSenseMinimize(CSIP_MODEL *model)
+{
+    if (model->sense == SCIP_OBJSENSE_MAXIMIZE)
+    {
+        // negate all objective coefficients
+        for (int i = 0; i < model->nvars; ++i)
+        {
+            SCIP_VAR *var = model->vars[i];
+            double coef = SCIPvarGetObj(var);
+            SCIP_in_CSIP(SCIPchgVarObj(model->scip, var, -1.0 * coef));
+        }
+
+    }
+    return CSIP_RETCODE_OK;
+}
+
 /*
  * interface methods
  */
@@ -212,7 +233,7 @@ CSIP_RETCODE CSIPcreateModel(CSIP_MODEL **modelptr)
     }
 
     model->nlazycb = 0;
-
+    model->sense = SCIP_OBJSENSE_MINIMIZE;
     model->status = CSIP_STATUS_UNKNOWN;
 
     CSIP_CALL(CSIPsetParameter(model, "display/width", 80));
@@ -438,20 +459,22 @@ CSIP_RETCODE CSIPsetObj(CSIP_MODEL *model, int numindices, int *indices,
 
 CSIP_RETCODE CSIPsetSenseMinimize(CSIP_MODEL *model)
 {
-    SCIP_in_CSIP(SCIPsetObjsense(model->scip, SCIP_OBJSENSE_MINIMIZE));
-
+    model->sense = SCIP_OBJSENSE_MINIMIZE;
     return CSIP_RETCODE_OK;
 }
 
 CSIP_RETCODE CSIPsetSenseMaximize(CSIP_MODEL *model)
 {
-    SCIP_in_CSIP(SCIPsetObjsense(model->scip, SCIP_OBJSENSE_MAXIMIZE));
-
+    model->sense = SCIP_OBJSENSE_MAXIMIZE;
     return CSIP_RETCODE_OK;
 }
 
 CSIP_RETCODE CSIPsolve(CSIP_MODEL *model)
 {
+    // always pose the problem as a minimization, because otherwise the order of
+    // the stored solutions will be messed up after the freeTransform :-(
+    CSIP_CALL(reformSenseMinimize(model));
+
     SCIP_in_CSIP(SCIPsolve(model->scip));
     model->status = getStatus(model);
 
@@ -474,7 +497,8 @@ double CSIPgetObjValue(CSIP_MODEL *model)
         return CSIP_RETCODE_ERROR;
     }
 
-    return SCIPgetSolOrigObj(model->scip, sol);
+    double objval = SCIPgetSolOrigObj(model->scip, sol);
+    return model->sense == SCIP_OBJSENSE_MINIMIZE ? objval : -objval;
 }
 
 CSIP_RETCODE CSIPgetVarValues(CSIP_MODEL *model, double *output)

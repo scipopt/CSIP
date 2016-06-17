@@ -633,14 +633,14 @@ int main(int argc, char **argv)
     mu_run_test(test_mip2);
     mu_run_test(test_mip3);
     mu_run_test(test_socp);
-    /* mu_run_test(test_lazy); */
+    mu_run_test(test_lazy);
     mu_run_test(test_lazy2);
     /* mu_run_test(test_objsense); */
-    /* mu_run_test(test_sos1); */
-    /* mu_run_test(test_sos2); */
-    /* mu_run_test(test_sos1_sos2); */
+    mu_run_test(test_sos1);
+    mu_run_test(test_sos2);
+    mu_run_test(test_sos1_sos2);
     mu_run_test(test_manythings);
-    /* mu_run_test(test_doublelazy); */
+    mu_run_test(test_doublelazy);
     /* mu_run_test(test_changeprob); */
 
     printf("All tests passed!\n");
