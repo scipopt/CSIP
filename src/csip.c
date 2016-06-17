@@ -213,6 +213,8 @@ CSIP_RETCODE CSIPcreateModel(CSIP_MODEL **modelptr)
 
     model->nlazycb = 0;
 
+    model->status = CSIP_STATUS_UNKNOWN;
+
     CSIP_CALL(CSIPsetParameter(model, "display/width", 80));
 
     return CSIP_RETCODE_OK;
