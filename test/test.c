@@ -28,19 +28,19 @@ static void test_lp()
     int x_idx, y_idx;
     CHECK(CSIPaddVar(m, 0.0, INFINITY, CSIP_VARTYPE_CONTINUOUS, &x_idx));
     CHECK(CSIPaddVar(m, 0.0, INFINITY, CSIP_VARTYPE_CONTINUOUS, &y_idx));
-    mu_assert("Wrong var index!", x_idx == 0);
-    mu_assert("Wrong var index!", y_idx == 1);
+    mu_assert_int("Wrong var index!", x_idx, 0);
+    mu_assert_int("Wrong var index!", y_idx, 1);
 
     CHECK(CSIPsetObj(m, numindices, indices, objcoef));
     int cons_idx;
     CHECK(CSIPaddLinCons(m, numindices, indices, conscoef, -INFINITY, 1.5,
                          &cons_idx));
-    mu_assert("Wrong cons index!", cons_idx == 0);
+    mu_assert_int("Wrong cons index!", cons_idx, 0);
 
     CHECK(CSIPsolve(m));
 
     int solvestatus = CSIPgetStatus(m);
-    mu_assert("Wrong status!", solvestatus == CSIP_STATUS_OPTIMAL);
+    mu_assert_int("Wrong status!", solvestatus, CSIP_STATUS_OPTIMAL);
 
     double objval = CSIPgetObjValue(m);
     mu_assert_near("Wrong objective value!", objval, -0.75);
@@ -75,18 +75,18 @@ static void test_mip()
     for (int i = 0; i < 5; i++)
     {
         CHECK(CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_BINARY, &var_idx));
-        mu_assert("Wrong var index!", var_idx == i);
+        mu_assert_int("Wrong var index!", var_idx, i);
     }
 
     CHECK(CSIPsetObj(m, numindices, indices, objcoef));
     int cons_idx;
     CHECK(CSIPaddLinCons(m, numindices, indices, conscoef, -INFINITY, 10.0,
                          &cons_idx));
-    mu_assert("Wrong cons index!", cons_idx == 0);
+    mu_assert_int("Wrong cons index!", cons_idx, 0);
 
     CHECK(CSIPsolve(m));
     int solvestatus = CSIPgetStatus(m);
-    mu_assert("Wrong status!", solvestatus == CSIP_STATUS_OPTIMAL);
+    mu_assert_int("Wrong status!", solvestatus, CSIP_STATUS_OPTIMAL);
 
     double objval = CSIPgetObjValue(m);
     mu_assert_near("Wrong objective value!", objval, -16.0);
@@ -118,7 +118,7 @@ static void test_mip2()
 
     int x_idx;
     CHECK(CSIPaddVar(m, -INFINITY, INFINITY, CSIP_VARTYPE_INTEGER, &x_idx));
-    mu_assert("Wrong var index!", x_idx == 0);
+    mu_assert_int("Wrong var index!", x_idx, 0);
 
     CHECK(CSIPsetObj(m, numindices, indices, objcoef));
 
@@ -155,7 +155,7 @@ static void test_mip3()
     CHECK(CSIPsolve(m));
 
     int solvestatus = CSIPgetStatus(m);
-    mu_assert("Wrong status!", solvestatus == CSIP_STATUS_INFEASIBLE);
+    mu_assert_int("Wrong status!", solvestatus, CSIP_STATUS_INFEASIBLE);
 
     CHECK(CSIPfreeModel(m));
 }
@@ -190,7 +190,7 @@ static void test_socp()
     // y
     CHECK(CSIPaddVar(m, -INFINITY, INFINITY, CSIP_VARTYPE_CONTINUOUS, NULL));
 
-    mu_assert("Wrong number of vars!", CSIPgetNumVars(m) == 3);
+    mu_assert_int("Wrong number of vars!", CSIPgetNumVars(m), 3);
 
     // sparse objective
     CHECK(CSIPsetObj(m, 1, objindices, objcoef));
@@ -204,7 +204,7 @@ static void test_socp()
     CHECK(CSIPsolve(m));
 
     int solvestatus = CSIPgetStatus(m);
-    mu_assert("Wrong status!", solvestatus == CSIP_STATUS_OPTIMAL);
+    mu_assert_int("Wrong status!", solvestatus, CSIP_STATUS_OPTIMAL);
 
     double objval = CSIPgetObjValue(m);
     mu_assert_near("Wrong objective value!", objval, sqrt(0.5));
@@ -290,7 +290,7 @@ static void test_lazy()
     CHECK(CSIPsolve(m));
 
     int solvestatus = CSIPgetStatus(m);
-    mu_assert("Wrong status!", solvestatus == CSIP_STATUS_OPTIMAL);
+    mu_assert_int("Wrong status!", solvestatus, CSIP_STATUS_OPTIMAL);
 
     double objval = CSIPgetObjValue(m);
     mu_assert_near("Wrong objective!", objval, 2.5);
@@ -355,7 +355,7 @@ static void test_lazy2()
     CHECK(CSIPsolve(m));
 
     int solvestatus = CSIPgetStatus(m);
-    mu_assert("Wrong status!", solvestatus == CSIP_STATUS_OPTIMAL);
+    mu_assert_int("Wrong status!", solvestatus, CSIP_STATUS_OPTIMAL);
 
     double objval = CSIPgetObjValue(m);
     mu_assert_near("Wrong objective value!", objval, -10.0);
@@ -383,19 +383,19 @@ static void test_objsense()
 
     // default sense is 'minimize'
     CHECK(CSIPsolve(m));
-    mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
+    mu_assert_int("Wrong status!", CSIPgetStatus(m), CSIP_STATUS_OPTIMAL);
     mu_assert_near("Wrong objective value!", CSIPgetObjValue(m), lb);
 
     // change sense to 'maximize'
     CHECK(CSIPsetSenseMaximize(m));
     CHECK(CSIPsolve(m));
-    mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
+    mu_assert_int("Wrong status!", CSIPgetStatus(m), CSIP_STATUS_OPTIMAL);
     mu_assert_near("Wrong objective value!", CSIPgetObjValue(m), ub);
 
     // change sense to 'minimize'
     CHECK(CSIPsetSenseMinimize(m));
     CHECK(CSIPsolve(m));
-    mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
+    mu_assert_int("Wrong status!", CSIPgetStatus(m), CSIP_STATUS_OPTIMAL);
     mu_assert_near("Wrong objective value!", CSIPgetObjValue(m), lb);
 
     CHECK(CSIPfreeModel(m));
@@ -422,7 +422,7 @@ static void test_sos1()
     CHECK(CSIPsetSenseMaximize(m));
     CHECK(CSIPsetObj(m, 3, objindices, objcoef));
     CHECK(CSIPsolve(m));
-    mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
+    mu_assert_int("Wrong status!", CSIPgetStatus(m), CSIP_STATUS_OPTIMAL);
     mu_assert_near("Wrong objective value!", CSIPgetObjValue(m), 4.0);
     CHECK(CSIPfreeModel(m));
 }
@@ -448,7 +448,7 @@ static void test_sos2()
     CHECK(CSIPsetSenseMaximize(m));
     CHECK(CSIPsetObj(m, 3, objindices, objcoef));
     CHECK(CSIPsolve(m));
-    mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
+    mu_assert_int("Wrong status!", CSIPgetStatus(m), CSIP_STATUS_OPTIMAL);
     mu_assert_near("Wrong objective value!", CSIPgetObjValue(m), 7.0);
     CHECK(CSIPfreeModel(m));
 }
@@ -476,7 +476,7 @@ static void test_sos1_sos2()
     CHECK(CSIPsetSenseMaximize(m));
     CHECK(CSIPsetObj(m, 3, objindices, objcoef));
     CHECK(CSIPsolve(m));
-    mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
+    mu_assert_int("Wrong status!", CSIPgetStatus(m), CSIP_STATUS_OPTIMAL);
     mu_assert_near("Wrong objective value!", CSIPgetObjValue(m), 5.0);
     CHECK(CSIPfreeModel(m));
 }
@@ -554,7 +554,7 @@ static void test_doublelazy()
     CHECK(CSIPaddLazyCallback(m, doubly_lazy_cb, 0, &data2));
 
     CHECK(CSIPsolve(m));
-    mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
+    mu_assert_int("Wrong status!", CSIPgetStatus(m), CSIP_STATUS_OPTIMAL);
     mu_assert_near("Wrong objective value!", CSIPgetObjValue(m), 3.0);
 
     CHECK(CSIPgetVarValues(m, solution));
@@ -600,7 +600,7 @@ static void test_changeprob()
     CHECK(CSIPsetObj(m, 2, indices, objcoef));
 
     CHECK(CSIPsolve(m));
-    mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
+    mu_assert_int("Wrong status!", CSIPgetStatus(m), CSIP_STATUS_OPTIMAL);
     mu_assert_near("Wrong objective value!", CSIPgetObjValue(m), 2.0);
 
     CHECK(CSIPgetVarValues(m, solution));
@@ -614,7 +614,7 @@ static void test_changeprob()
     CHECK(CSIPsetObj(m, 3, indices, objcoef));
 
     CHECK(CSIPsolve(m));
-    mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_OPTIMAL);
+    mu_assert_int("Wrong status!", CSIPgetStatus(m), CSIP_STATUS_OPTIMAL);
     mu_assert_near("Wrong objective value!", CSIPgetObjValue(m), 3.0);
 
     CHECK(CSIPgetVarValues(m, solution));
@@ -652,7 +652,7 @@ static void test_initialsol()
 
 
     CHECK(CSIPsolve(m));
-    mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_USERLIMIT);
+    mu_assert_int("Wrong status!", CSIPgetStatus(m), CSIP_STATUS_USERLIMIT);
     mu_assert_near("Wrong objective value!", CSIPgetObjValue(m), 46.0);
 
     CHECK(CSIPgetVarValues(m, solution));
@@ -708,7 +708,7 @@ static void test_heurcb()
     CHECK(CSIPaddHeuristicCallback(m, heurcb, NULL));
 
     CHECK(CSIPsolve(m));
-    mu_assert("Wrong status!", CSIPgetStatus(m) == CSIP_STATUS_USERLIMIT);
+    mu_assert_int("Wrong status!", CSIPgetStatus(m), CSIP_STATUS_USERLIMIT);
     mu_assert_near("Wrong objective value!", CSIPgetObjValue(m), 4.0);
 
     CHECK(CSIPgetVarValues(m, solution));
