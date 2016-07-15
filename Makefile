@@ -39,6 +39,7 @@ TESTBIN 	= $(TESTDIR)/test # don't know where to put the test executable
 
 CSIPHEADER  = $(CSIPINC)/csip.h
 CSIPSRC 	= $(CSIPSRCDIR)/csip.c
+CSIPOBJ 	= $(CSIPSRCDIR)/csip.o
 CSIPLIB 	= $(CSIPLIBDIR)/libcsip.so
 
 # RULES
@@ -47,7 +48,8 @@ all: 		$(CSIPLIBDIR) $(CSIPLIB)
 
 .PHONY: clean
 clean: 
-	@echo "removing $(CSIPLIB), $(TESTBIN)"
+	@echo "removing $(CSIPOBJ), $(CSIPLIB), $(TESTBIN)"
+	@rm -f $(CSIPOBJ)
 	@rm -f $(CSIPLIB)
 	@rm -f $(TESTBIN)
 
@@ -90,13 +92,12 @@ $(CSIPLIBDIR):
 	make links
 
 $(CSIPLIB): $(CSIPSRC)
-	gcc $(CFLAGS) $(FLAGS) -c $< $(LFLAGS) $(LINKFLAGS) $(SCIPLIB) -fPIC -o $@
-	@#gcc -I $(SCIPSRC) -I ../include/ -c csip.c -L../lib -Wl,-rpath=../lib/ -lscipopt -fPIC -o libcsip.so
+	gcc $(CFLAGS) $(FLAGS) -c $< $(LFLAGS) $(LINKFLAGS) $(SCIPLIB) -fPIC -o $(CSIPOBJ)
+	gcc $(CFLAGS) $(CSIPOBJ) $(LFLAGS) $(LINKFLAGS) $(SCIPLIB) -fPIC -shared -o $@
 
 $(TESTBIN): $(TESTSRC) $(CSIPLIB)
 	@echo "compiling test"
 	gcc $(CFLAGS) $(TESTFLAGS) $< $(LINKTESTFLAGS) $(TESTLIBS) $(LTESTFLAGS) -o $@
-	@#gcc -std=c99 -I ../include/ test.c  -Wl,-rpath=../src/ -Wl,-rpath=../lib -L ../src/ -lcsip -L ../lib/ -lscipopt -lm
 
 ASTYLEOPTS	= --style=allman --indent=spaces=4 --indent-cases --pad-oper --pad-header --unpad-paren --align-pointer=name --add-brackets --max-code-length=80
 
