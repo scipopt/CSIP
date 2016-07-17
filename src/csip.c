@@ -355,6 +355,19 @@ CSIP_RETCODE CSIPchgVarUB(CSIP_MODEL *model, int numindices, int *indices,
     return CSIP_RETCODE_OK;
 }
 
+CSIP_RETCODE CSIPchgVarType(
+    CSIP_MODEL *model, int varindex, CSIP_VARTYPE vartype)
+{
+    SCIP *scip = model->scip;
+    SCIP_VAR *var = model->vars[varindex];
+    SCIP_Bool infeas = FALSE;
+
+    SCIP_in_CSIP(SCIPchgVarType(scip, var, vartype, &infeas));
+    // TODO: don't ignore `infeas`?
+
+    return CSIP_RETCODE_OK;
+}
+
 CSIP_RETCODE CSIPaddLinCons(CSIP_MODEL *model, int numindices, int *indices,
                             double *coefs, double lhs, double rhs, int *idx)
 {

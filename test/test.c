@@ -625,6 +625,59 @@ static void test_changeprob()
     CHECK(CSIPfreeModel(m));
 }
 
+static void test_changevartype()
+{
+    // solve two problems in a row:
+    //
+    // min 2x + 3y
+    //     x + y >= 1.5
+    //     0 <= x,y <= 9
+    //
+    // --> (1.5, 0)
+    //
+    // and with x integer
+    //
+    // --> (1, 0.5)
+
+
+    CSIP_MODEL *m;
+    int indices[] = {0, 1};
+    double lincoef[] = {1.0, 1.0};
+    double objcoef[] = {2.0, 3.0};
+    double solution[2];
+
+    CHECK(CSIPcreateModel(&m));
+    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+
+    // first problem
+    CHECK(CSIPaddVar(m, 0.0, 9.0, CSIP_VARTYPE_CONTINUOUS, NULL)); // x
+    CHECK(CSIPaddVar(m, 0.0, 9.0, CSIP_VARTYPE_CONTINUOUS, NULL)); // y
+    CHECK(CSIPaddLinCons(m, 2, indices, lincoef, 1.5, INFINITY, NULL));
+    CHECK(CSIPsetSenseMinimize(m));
+    CHECK(CSIPsetObj(m, 2, indices, objcoef));
+
+    CHECK(CSIPsolve(m));
+    mu_assert_int("Wrong status!", CSIPgetStatus(m), CSIP_STATUS_OPTIMAL);
+    mu_assert_near("Wrong objective value!", CSIPgetObjValue(m), 3.0);
+
+    CHECK(CSIPgetVarValues(m, solution));
+    mu_assert_near("Wrong solution!", solution[0], 1.5);
+    mu_assert_near("Wrong solution!", solution[1], 0.0);
+
+    // second problem, modifying the first
+    CHECK(CSIPchgVarType(m, 0, CSIP_VARTYPE_INTEGER));
+
+    CHECK(CSIPsolve(m));
+    mu_assert_int("Wrong status!", CSIPgetStatus(m), CSIP_STATUS_OPTIMAL);
+    mu_assert_near("Wrong objective value!", CSIPgetObjValue(m), 3.5);
+
+    CHECK(CSIPgetVarValues(m, solution));
+    mu_assert_near("Wrong solution!", solution[0], 1.0);
+    mu_assert_near("Wrong solution!", solution[1], 0.5);
+
+    CHECK(CSIPfreeModel(m));
+}
+
 static void test_initialsol()
 {
     // attempt to solve a problem, but specify limits such that only the
@@ -736,6 +789,7 @@ int main(int argc, char **argv)
     mu_run_test(test_manythings);
     mu_run_test(test_doublelazy);
     mu_run_test(test_changeprob);
+    mu_run_test(test_changevartype);
     mu_run_test(test_initialsol);
     mu_run_test(test_heurcb);
 

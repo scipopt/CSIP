@@ -48,6 +48,10 @@ CSIP_RETCODE CSIPchgVarLB(
 CSIP_RETCODE CSIPchgVarUB(
     CSIP_MODEL *model, int numindices, int *indices, double *upperbounds);
 
+// Set new type for a variable.
+CSIP_RETCODE CSIPchgVarType(
+    CSIP_MODEL *model, int varindex, CSIP_VARTYPE vartype);
+
 // Add new linear constraint to the model, of the form:
 //    lhs <= sum_i coefs[i] * vars[i] <= rhs
 // For one-sided inequalities, use (-)INFINITY for lhs or rhs.
