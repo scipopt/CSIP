@@ -364,6 +364,17 @@ CSIP_RETCODE CSIPchgVarType(
 
     SCIP_in_CSIP(SCIPchgVarType(scip, var, vartype, &infeas));
     // TODO: don't ignore `infeas`?
+    // for SCIP, solving a problem with a binary variable with bounds not in [0,1] produces an error
+    // here we change them to the correct value, since JuMP seems to expect that behaviour
+    // see JuMP tests: [probmod] Test bound modification on binaries
+    if( vartype == CSIP_VARTYPE_BINARY && SCIPvarGetLbLocal(var) < 0.0 )
+    {
+        SCIP_in_CSIP(SCIPchgVarLb(scip, var, 0.0));
+    }
+    if( vartype == CSIP_VARTYPE_BINARY && SCIPvarGetUbLocal(var) > 1.0 )
+    {
+        SCIP_in_CSIP(SCIPchgVarUb(scip, var, 1.0));
+    }
 
     return CSIP_RETCODE_OK;
 }
