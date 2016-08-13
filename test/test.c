@@ -665,7 +665,11 @@ static void test_changevartype()
     mu_assert_near("Wrong solution!", solution[1], 0.0);
 
     // second problem, modifying the first
+    mu_assert_int("Wrong vartype", CSIPgetVarType(m, 0), CSIP_VARTYPE_CONTINUOUS);
+    mu_assert_int("Wrong vartype", CSIPgetVarType(m, 1), CSIP_VARTYPE_CONTINUOUS);
     CHECK(CSIPchgVarType(m, 0, CSIP_VARTYPE_INTEGER));
+    mu_assert_int("Wrong vartype", CSIPgetVarType(m, 0), CSIP_VARTYPE_INTEGER);
+    mu_assert_int("Wrong vartype", CSIPgetVarType(m, 1), CSIP_VARTYPE_CONTINUOUS);
 
     CHECK(CSIPsolve(m));
     mu_assert_int("Wrong status!", CSIPgetStatus(m), CSIP_STATUS_OPTIMAL);
