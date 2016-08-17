@@ -80,6 +80,9 @@ struct csip_model
 
     // store the optimization status (for after freeTransform)
     CSIP_STATUS status;
+
+    // store the best bound (for after freeTransform)
+    double objbound;
 };
 
 /*
@@ -241,6 +244,7 @@ CSIP_RETCODE CSIPcreateModel(CSIP_MODEL **modelptr)
     model->sense = SCIP_OBJSENSE_MINIMIZE;
     model->initialsol = NULL;
     model->status = CSIP_STATUS_UNKNOWN;
+    model->objbound = strtod("NaN", NULL);
 
     CSIP_CALL(CSIPsetParameter(model, "display/width", 80));
 
@@ -538,6 +542,9 @@ CSIP_RETCODE CSIPsolve(CSIP_MODEL *model)
     SCIP_in_CSIP(SCIPsolve(model->scip));
     model->status = getStatus(model);
 
+    double objbound = SCIPgetDualbound(model->scip);
+    model->objbound = (model->sense == SCIP_OBJSENSE_MINIMIZE ? objbound : -objbound);
+
     SCIP_in_CSIP(SCIPfreeTransform(model->scip));
 
     // reset the objective (might be negated)
@@ -563,6 +570,12 @@ double CSIPgetObjValue(CSIP_MODEL *model)
     double objval = SCIPgetSolOrigObj(model->scip, sol);
     return model->sense == SCIP_OBJSENSE_MINIMIZE ? objval : -objval;
 }
+
+double CSIPgetObjBound(CSIP_MODEL *model)
+{
+    return model->objbound;
+}
+
 
 CSIP_RETCODE CSIPgetVarValues(CSIP_MODEL *model, double *output)
 {
