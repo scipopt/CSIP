@@ -90,6 +90,8 @@ static void test_mip()
 
     double objval = CSIPgetObjValue(m);
     mu_assert_near("Wrong objective value!", objval, -16.0);
+    double objbound = CSIPgetObjBound(m);
+    mu_assert_near("Wrong objective bound!", objbound, -16.0);
 
     CHECK(CSIPgetVarValues(m, solution));
     mu_assert_near("Wrong solution!", solution[0], 1.0);

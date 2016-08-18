@@ -109,6 +109,9 @@ CSIP_RETCODE CSIPgetVarValues(CSIP_MODEL *model, double *output);
 // Get the objective value of the best-known solution.
 double CSIPgetObjValue(CSIP_MODEL *model);
 
+// Get the best known bound on the optimal solution
+double CSIPgetObjBound(CSIP_MODEL *model);
+
 // Get the solving status.
 CSIP_STATUS CSIPgetStatus(CSIP_MODEL *model);
 
