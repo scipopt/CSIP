@@ -542,8 +542,8 @@ CSIP_RETCODE CSIPsolve(CSIP_MODEL *model)
     SCIP_in_CSIP(SCIPsolve(model->scip));
     model->status = getStatus(model);
 
-    double objbound = SCIPgetDualbound(model->scip);
-    model->objbound = (model->sense == SCIP_OBJSENSE_MINIMIZE ? objbound : -objbound);
+    double dual = SCIPgetDualbound(model->scip);
+    model->objbound = (model->sense == SCIP_OBJSENSE_MINIMIZE ? dual : -dual);
 
     SCIP_in_CSIP(SCIPfreeTransform(model->scip));
 
