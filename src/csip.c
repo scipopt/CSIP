@@ -838,6 +838,7 @@ CSIP_RETCODE CSIPcbAddLinCons(CSIP_CBDATA *cbdata, int numindices, int *indices,
 
     CSIP_CALL(createLinCons(cbdata->model, numindices, indices, coefs, lhs, rhs,
                             &cons));
+    SCIP_in_CSIP(SCIPsetConsLocal(scip, cons, islocal == 1));
     SCIP_in_CSIP(SCIPcheckCons(scip, cons, sol, FALSE, FALSE, FALSE, &result));
 
     if (result == SCIP_INFEASIBLE)
