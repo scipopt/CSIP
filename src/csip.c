@@ -553,6 +553,11 @@ CSIP_RETCODE CSIPsolve(CSIP_MODEL *model)
     return CSIP_RETCODE_OK;
 }
 
+CSIP_RETCODE CSIPinterrupt(CSIP_MODEL *model)
+{
+    SCIP_in_CSIP(SCIPinterruptSolve(model->scip));
+    return CSIP_RETCODE_OK;
+}
 
 CSIP_STATUS CSIPgetStatus(CSIP_MODEL *model)
 {

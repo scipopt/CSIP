@@ -368,6 +368,37 @@ static void test_lazy2()
     CHECK(CSIPfreeModel(m));
 }
 
+CSIP_RETCODE lazycb_interrupt(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata)
+{
+    CHECK(CSIPinterrupt(m));
+    return CSIP_RETCODE_OK;
+}
+
+static void test_lazy_interrupt()
+{
+    /*
+       find x
+       s.t. x >= 1.5, integer
+       solution is interrupted
+     */
+
+    CSIP_MODEL *m;
+
+    CHECK(CSIPcreateModel(&m));
+    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+    CHECK(CSIPaddVar(m, 1.5, INFINITY, CSIP_VARTYPE_INTEGER, NULL));
+
+    int fractional = 1;
+    CHECK(CSIPaddLazyCallback(m, lazycb_interrupt, fractional, NULL));
+
+    CHECK(CSIPsolve(m));
+
+    int solvestatus = CSIPgetStatus(m);
+    mu_assert_int("Wrong status!", solvestatus, CSIP_STATUS_USERLIMIT);
+
+    CHECK(CSIPfreeModel(m));
+}
+
 static void test_objsense()
 {
     // min/max  x
@@ -788,6 +819,7 @@ int main(int argc, char **argv)
     mu_run_test(test_socp);
     mu_run_test(test_lazy);
     mu_run_test(test_lazy2);
+    mu_run_test(test_lazy_interrupt);
     mu_run_test(test_objsense);
     mu_run_test(test_sos1);
     mu_run_test(test_sos2);

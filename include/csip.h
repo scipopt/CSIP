@@ -102,6 +102,9 @@ CSIP_RETCODE CSIPsetSenseMaximize(CSIP_MODEL *model);
 // Solve the model.
 CSIP_RETCODE CSIPsolve(CSIP_MODEL *model);
 
+// Interrupt the solving process.
+CSIP_RETCODE CSIPinterrupt(CSIP_MODEL *model);
+
 // Copy the values of all variables in the best known solution into
 // the output array. The user is responsible for memory allocation.
 CSIP_RETCODE CSIPgetVarValues(CSIP_MODEL *model, double *output);
