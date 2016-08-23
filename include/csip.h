@@ -135,28 +135,28 @@ CSIP_RETCODE CSIPsetInitialSolution(CSIP_MODEL *model, double *values);
 
 /* lazy constraint callback functions */
 
-typedef struct SCIP_ConshdlrData CSIP_CBDATA;
+typedef struct SCIP_ConshdlrData CSIP_LAZYDATA;
 
 // Copy values of current (relaxation) solution to output array. Call
 // this function from your lazy constraint callback.
-CSIP_RETCODE CSIPcbGetVarValues(CSIP_CBDATA *cbdata, double *output);
+CSIP_RETCODE CSIPlazyGetVarValues(CSIP_LAZYDATA *lazydata, double *output);
 
 // Add a linear constraint from a lazy constraint callback.
 // With islocal, you specify whether the added constraint is only
 // valid locally (in the branch-and-bound subtree).
-CSIP_RETCODE CSIPcbAddLinCons(
-    CSIP_CBDATA *cbdata, int numindices, int *indices, double *coefs,
+CSIP_RETCODE CSIPlazyAddLinCons(
+    CSIP_LAZYDATA *lazydata, int numindices, int *indices, double *coefs,
     double lhs, double rhs, int islocal);
 
 typedef CSIP_RETCODE(*CSIP_LAZYCALLBACK)(
-    CSIP_MODEL *model, CSIP_CBDATA *cbdata, void *userdata);
+    CSIP_MODEL *model, CSIP_LAZYDATA *lazydata, void *userdata);
 
 // Add a lazy constraint callback to the model.
 // With fractional == 0, the callback is only called for solution
 // candidates that satisfy all integrality conditions.
 // You may use userdata to pass any data.
 CSIP_RETCODE CSIPaddLazyCallback(
-    CSIP_MODEL *model, CSIP_LAZYCALLBACK cb, int fractional, void *userdata);
+    CSIP_MODEL *model, CSIP_LAZYCALLBACK lazycb, int fractional, void *userdata);
 
 /* heuristic callback functions */
 
@@ -165,7 +165,7 @@ typedef struct SCIP_HeurData CSIP_HEURDATA;
 // signature for heuristic callbacks.
 // must only call `CSIPheur*` methods from within callback, passing `heurdata`.
 typedef CSIP_RETCODE(*CSIP_HEURCALLBACK)(
-    CSIP_MODEL *model, CSIP_HEURDATA *cbdata, void *userdata);
+    CSIP_MODEL *model, CSIP_HEURDATA *heurdata, void *userdata);
 
 // Copy values of solution to output array. Call this function from your
 // heuristic callback. Solution is LP relaxation of current node.

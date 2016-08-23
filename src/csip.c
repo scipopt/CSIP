@@ -781,34 +781,34 @@ CSIP_RETCODE CSIPaddLazyCallback(CSIP_MODEL *model, CSIP_LAZYCALLBACK callback,
 }
 
 /* returns LP or given solution depending whether we are called from check or enfo */
-CSIP_RETCODE CSIPcbGetVarValues(CSIP_CBDATA *cbdata, double *output)
+CSIP_RETCODE CSIPlazyGetVarValues(CSIP_LAZYDATA *lazydata, double *output)
 {
     int i;
     SCIP *scip;
     SCIP_VAR *var;
     SCIP_SOL *sol;
 
-    scip = cbdata->model->scip;
+    scip = lazydata->model->scip;
 
-    if (cbdata->checkonly)
+    if (lazydata->checkonly)
     {
-        sol = cbdata->sol;
+        sol = lazydata->sol;
     }
     else
     {
         sol = NULL;
     }
 
-    for (i = 0; i < cbdata->model->nvars; ++i)
+    for (i = 0; i < lazydata->model->nvars; ++i)
     {
-        var = cbdata->model->vars[i];
+        var = lazydata->model->vars[i];
         output[i] = SCIPgetSolVal(scip, sol, var);
     }
 
     return CSIP_RETCODE_OK;
 }
 
-CSIP_RETCODE CSIPcbAddLinCons(CSIP_CBDATA *cbdata, int numindices, int *indices,
+CSIP_RETCODE CSIPlazyAddLinCons(CSIP_LAZYDATA *lazydata, int numindices, int *indices,
                               double *coefs, double lhs, double rhs, int islocal)
 {
     SCIP *scip;
@@ -816,11 +816,11 @@ CSIP_RETCODE CSIPcbAddLinCons(CSIP_CBDATA *cbdata, int numindices, int *indices,
     SCIP_SOL *sol;
     SCIP_RESULT result;
 
-    scip = cbdata->model->scip;
+    scip = lazydata->model->scip;
 
-    if (cbdata->checkonly)
+    if (lazydata->checkonly)
     {
-        sol = cbdata->sol;
+        sol = lazydata->sol;
     }
     else
     {
@@ -836,29 +836,29 @@ CSIP_RETCODE CSIPcbAddLinCons(CSIP_CBDATA *cbdata, int numindices, int *indices,
      */
     if (SCIPgetStage(scip) == SCIP_STAGE_SOLVED)
     {
-        assert(cbdata->checkonly);
-        cbdata->feasible = TRUE; /* to be very explicit */
+        assert(lazydata->checkonly);
+        lazydata->feasible = TRUE; /* to be very explicit */
         return CSIP_RETCODE_OK;
     }
 
-    CSIP_CALL(createLinCons(cbdata->model, numindices, indices, coefs, lhs, rhs,
+    CSIP_CALL(createLinCons(lazydata->model, numindices, indices, coefs, lhs, rhs,
                             &cons));
     SCIP_in_CSIP(SCIPsetConsLocal(scip, cons, islocal == 1));
     SCIP_in_CSIP(SCIPcheckCons(scip, cons, sol, FALSE, FALSE, FALSE, &result));
 
     if (result == SCIP_INFEASIBLE)
     {
-        cbdata->feasible = FALSE;
+        lazydata->feasible = FALSE;
     }
 
-    if (!cbdata->checkonly)
+    if (!lazydata->checkonly)
     {
         /* we do not store cons, because the original problem does not contain them;
          * and there is an issue when freeTransform is called
          */
         SCIP_in_CSIP(SCIPaddCons(scip, cons));
     }
-    SCIP_in_CSIP(SCIPreleaseCons(cbdata->model->scip, &cons));
+    SCIP_in_CSIP(SCIPreleaseCons(lazydata->model->scip, &cons));
 
     return CSIP_RETCODE_OK;
 }

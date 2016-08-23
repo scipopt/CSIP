@@ -227,7 +227,7 @@ struct MyData
     double *storage;
 };
 
-CSIP_RETCODE lazy_callback(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata)
+CSIP_RETCODE lazy_callback(CSIP_MODEL *m, CSIP_LAZYDATA *lazydata, void *userdata)
 {
 
     struct MyData *data = (struct MyData *) userdata;
@@ -238,12 +238,12 @@ CSIP_RETCODE lazy_callback(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata)
     int indices[] = {0, 1};
     double coef[] = {1.0, 1.0};
 
-    CSIPcbGetVarValues(cb, data->storage);
+    CSIPlazyGetVarValues(lazydata, data->storage);
 
     // enforce x + y <= 3, global cut
     if (data->storage[0] + data->storage[1] > 3)
     {
-        CSIPcbAddLinCons(cb, 2, indices, coef, -INFINITY, 3.0, 0);
+        CSIPlazyAddLinCons(lazydata, 2, indices, coef, -INFINITY, 3.0, 0);
     }
 
     return CSIP_RETCODE_OK;
@@ -305,7 +305,7 @@ static void test_lazy()
     CHECK(CSIPfreeModel(m));
 }
 
-CSIP_RETCODE lazy_callback2(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata)
+CSIP_RETCODE lazy_callback2(CSIP_MODEL *m, CSIP_LAZYDATA *lazydata, void *userdata)
 {
 
     struct MyData *data = (struct MyData *) userdata;
@@ -314,13 +314,13 @@ CSIP_RETCODE lazy_callback2(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata)
     int indices[] = {0};
     double coef[] = {1.0};
 
-    CSIPcbGetVarValues(cb, data->storage);
+    CSIPlazyGetVarValues(lazydata, data->storage);
     // make sure we didn't get a fractional solution
     mu_assert_near("fractional not working", data->storage[0],
                    round(data->storage[0]));
 
     // always add the cut x <= 10
-    CSIPcbAddLinCons(cb, 1, indices, coef, -INFINITY, 10.5, 0);
+    CSIPlazyAddLinCons(lazydata, 1, indices, coef, -INFINITY, 10.5, 0);
 
     return CSIP_RETCODE_OK;
 }
@@ -368,7 +368,7 @@ static void test_lazy2()
     CHECK(CSIPfreeModel(m));
 }
 
-CSIP_RETCODE lazycb_interrupt(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata)
+CSIP_RETCODE lazycb_interrupt(CSIP_MODEL *m, CSIP_LAZYDATA *lazydata, void *userdata)
 {
     CHECK(CSIPinterrupt(m));
     return CSIP_RETCODE_OK;
@@ -540,14 +540,14 @@ struct DoubleData
     int indices[2];
 };
 
-CSIP_RETCODE doubly_lazy_cb(CSIP_MODEL *m, CSIP_CBDATA *cb, void *userdata)
+CSIP_RETCODE doubly_lazy_cb(CSIP_MODEL *m, CSIP_LAZYDATA *lazydata, void *userdata)
 {
 
     struct DoubleData *data = (struct DoubleData *) userdata;
     double coef[] = {1.0, 1.0};
 
     // always add the cut var1 + var2 <= 1
-    CSIPcbAddLinCons(cb, 2, data->indices, coef, -INFINITY, 1.0, 0);
+    CSIPlazyAddLinCons(lazydata, 2, data->indices, coef, -INFINITY, 1.0, 0);
 
     return CSIP_RETCODE_OK;
 }
@@ -751,11 +751,11 @@ static void test_initialsol()
     CHECK(CSIPfreeModel(m));
 }
 
-CSIP_RETCODE heurcb(CSIP_MODEL *model, CSIP_HEURDATA *cbdata, void *userdata)
+CSIP_RETCODE heurcb(CSIP_MODEL *model, CSIP_HEURDATA *heurdata, void *userdata)
 {
     double sol[] = {2.0, 2.0};
     mu_assert("Invalid userdata", userdata == NULL);
-    CHECK(CSIPheurSetSolution(cbdata, sol));
+    CHECK(CSIPheurSetSolution(heurdata, sol));
     return CSIP_RETCODE_OK;
 }
 
