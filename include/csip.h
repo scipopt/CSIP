@@ -152,11 +152,9 @@ typedef CSIP_RETCODE(*CSIP_LAZYCALLBACK)(
     CSIP_MODEL *model, CSIP_LAZYDATA *lazydata, void *userdata);
 
 // Add a lazy constraint callback to the model.
-// With fractional == 0, the callback is only called for solution
-// candidates that satisfy all integrality conditions.
 // You may use userdata to pass any data.
 CSIP_RETCODE CSIPaddLazyCallback(
-    CSIP_MODEL *model, CSIP_LAZYCALLBACK lazycb, int fractional, void *userdata);
+    CSIP_MODEL *model, CSIP_LAZYCALLBACK lazycb, void *userdata);
 
 /* heuristic callback functions */
 

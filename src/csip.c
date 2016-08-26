@@ -748,7 +748,7 @@ SCIP_DECL_CONSLOCK(consLockLazy)
  */
 
 CSIP_RETCODE CSIPaddLazyCallback(CSIP_MODEL *model, CSIP_LAZYCALLBACK callback,
-                                 int fractional, void *userdata)
+                                 void *userdata)
 {
     SCIP_CONSHDLRDATA *conshdlrdata;
     SCIP_CONSHDLR *conshdlr;
@@ -758,8 +758,8 @@ CSIP_RETCODE CSIPaddLazyCallback(CSIP_MODEL *model, CSIP_LAZYCALLBACK callback,
 
     scip = model->scip;
 
-    /* it is -1 or 1 because cons_integral has priority 0 */
-    priority = fractional ? -1 : 1;
+    /* cons_integral has priority 0 and we want to be checked before */
+    priority = 1;
 
     SCIP_in_CSIP(SCIPallocMemory(scip, &conshdlrdata));
 

@@ -288,7 +288,7 @@ static void test_lazy()
 
     struct MyData userdata = { 10, &solution[0] };
 
-    CHECK(CSIPaddLazyCallback(m, lazy_callback, 1, &userdata));
+    CHECK(CSIPaddLazyCallback(m, lazy_callback, &userdata));
 
     CHECK(CSIPsolve(m));
 
@@ -316,10 +316,11 @@ CSIP_RETCODE lazy_callback2(CSIP_MODEL *m, CSIP_LAZYDATA *lazydata,
     int indices[] = {0};
     double coef[] = {1.0};
 
-    CSIPlazyGetVarValues(lazydata, data->storage);
-    // make sure we didn't get a fractional solution
-    mu_assert_near("fractional not working", data->storage[0],
-                   round(data->storage[0]));
+    /* TODO: ask for state first */
+    /* CSIPlazyGetVarValues(lazydata, data->storage); */
+    /* // make sure we didn't get a fractional solution */
+    /* mu_assert_near("fractional not working", data->storage[0], */
+    /*                round(data->storage[0])); */
 
     // always add the cut x <= 10
     CSIPlazyAddLinCons(lazydata, 1, indices, coef, -INFINITY, 10.5, 0);
@@ -353,8 +354,7 @@ static void test_lazy2()
 
     struct MyData userdata = { 10, &solution[0] };
 
-    // test fractional = 0
-    CHECK(CSIPaddLazyCallback(m, lazy_callback2, 0, &userdata));
+    CHECK(CSIPaddLazyCallback(m, lazy_callback2, &userdata));
 
     CHECK(CSIPsolve(m));
 
@@ -391,8 +391,7 @@ static void test_lazy_interrupt()
     CHECK(CSIPsetParameter(m, "display/verblevel", 2));
     CHECK(CSIPaddVar(m, 1.5, INFINITY, CSIP_VARTYPE_INTEGER, NULL));
 
-    int fractional = 1;
-    CHECK(CSIPaddLazyCallback(m, lazycb_interrupt, fractional, NULL));
+    CHECK(CSIPaddLazyCallback(m, lazycb_interrupt, NULL));
 
     CHECK(CSIPsolve(m));
 
@@ -584,11 +583,11 @@ static void test_doublelazy()
 
     data1.indices[0] = 0;
     data1.indices[1] = 1;
-    CHECK(CSIPaddLazyCallback(m, doubly_lazy_cb, 0, &data1));
+    CHECK(CSIPaddLazyCallback(m, doubly_lazy_cb, &data1));
 
     data2.indices[0] = 2;
     data2.indices[1] = 1;
-    CHECK(CSIPaddLazyCallback(m, doubly_lazy_cb, 0, &data2));
+    CHECK(CSIPaddLazyCallback(m, doubly_lazy_cb, &data2));
 
     CHECK(CSIPsolve(m));
     mu_assert_int("Wrong status!", CSIPgetStatus(m), CSIP_STATUS_OPTIMAL);
