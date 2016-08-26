@@ -135,6 +135,10 @@ CSIP_RETCODE CSIPsetParameterGeneric(
 // Get the number of variables added to the model.
 int CSIPgetNumVars(CSIP_MODEL *model);
 
+// Get the number of constraints added to the model.
+// Beware: constraints added by a lazy callbacks are not counted here!
+int CSIPgetNumConss(CSIP_MODEL *model);
+
 // Supply a solution (as a dense array) to be checked at the beginning of the
 // solving process. Only complete solutions are supported.
 CSIP_RETCODE CSIPsetInitialSolution(CSIP_MODEL *model, double *values);

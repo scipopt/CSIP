@@ -616,6 +616,11 @@ int CSIPgetNumVars(CSIP_MODEL *model)
     return model->nvars;
 }
 
+int CSIPgetNumConss(CSIP_MODEL *model)
+{
+    return model->nconss;
+}
+
 CSIP_RETCODE CSIPsetInitialSolution(CSIP_MODEL *model, double *values)
 {
     if (model->initialsol != NULL) // was solution already given?

@@ -203,6 +203,8 @@ static void test_socp()
     CHECK(CSIPaddQuadCons(m, 0, NULL, NULL, 3, quadi, quadj, quadcoef, -INFINITY,
                           0.0, NULL));
 
+    mu_assert_int("Wrong number of conss!", CSIPgetNumConss(m), 2);
+
     CHECK(CSIPsolve(m));
 
     int solvestatus = CSIPgetStatus(m);
