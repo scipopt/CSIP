@@ -780,6 +780,54 @@ CSIP_RETCODE CSIPaddLazyCallback(CSIP_MODEL *model, CSIP_LAZYCALLBACK callback,
     return CSIP_RETCODE_OK;
 }
 
+static
+CSIP_RETCODE isSolIntegral(SCIP *scip, SCIP_SOL *sol, SCIP_Bool *integral)
+{
+    // inspired by consCheckIntegral in cons_integral.c
+    SCIP_VAR **vars;
+    SCIP_Real solval;
+    int nbin, nint, nimpl, nallinteger;
+
+    SCIP_in_CSIP(SCIPgetSolVarsData(scip, sol, &vars, NULL,
+                                    &nbin, &nint, &nimpl, NULL));
+
+    *integral = TRUE;
+    nallinteger = nbin + nint + nimpl;
+    for (int v = 0; v < nallinteger; ++v)
+    {
+        solval = SCIPgetSolVal(scip, sol, vars[v]);
+        if (!SCIPisFeasIntegral(scip, solval))
+        {
+            *integral = FALSE;
+            break;
+        }
+    }
+
+    return CSIP_RETCODE_OK;
+}
+
+
+CSIP_LAZY_CONTEXT CSIPlazyGetContext(CSIP_LAZYDATA *lazydata)
+{
+    SCIP_Bool check = lazydata->checkonly;
+    SCIP_SOL *sol = check ? lazydata->sol : NULL;
+    SCIP_Bool integral = FALSE;
+    CSIP_CALL(isSolIntegral(lazydata->model->scip, sol, &integral));
+
+    if (integral)
+    {
+        return CSIP_LAZY_INTEGRALSOL;
+    }
+    else if (!check)
+    {
+        return CSIP_LAZY_LPRELAX;
+    }
+    else
+    {
+        return CSIP_LAZY_OTHER;
+    }
+}
+
 /* returns LP or given solution depending whether we are called from check or enfo */
 CSIP_RETCODE CSIPlazyGetVarValues(CSIP_LAZYDATA *lazydata, double *output)
 {
@@ -789,15 +837,7 @@ CSIP_RETCODE CSIPlazyGetVarValues(CSIP_LAZYDATA *lazydata, double *output)
     SCIP_SOL *sol;
 
     scip = lazydata->model->scip;
-
-    if (lazydata->checkonly)
-    {
-        sol = lazydata->sol;
-    }
-    else
-    {
-        sol = NULL;
-    }
+    sol = lazydata->checkonly ? lazydata->sol : NULL;
 
     for (i = 0; i < lazydata->model->nvars; ++i)
     {
