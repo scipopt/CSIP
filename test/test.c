@@ -316,7 +316,7 @@ CSIP_RETCODE lazy_callback2(CSIP_MODEL *m, CSIP_LAZYDATA *lazydata,
     int indices[] = {0};
     double coef[] = {1.0};
 
-    if(CSIPlazyGetContext(lazydata) == CSIP_LAZY_INTEGRALSOL)
+    if (CSIPlazyGetContext(lazydata) == CSIP_LAZY_INTEGRALSOL)
     {
         CSIPlazyGetVarValues(lazydata, data->storage);
         // make sure we didn't get a fractional solution
