@@ -25,6 +25,12 @@ typedef int CSIP_VARTYPE;
 #define CSIP_VARTYPE_IMPLINT 2
 #define CSIP_VARTYPE_CONTINUOUS 3
 
+/* solving context for lazy callbacks */
+typedef int CSIP_LAZY_CONTEXT;
+#define CSIP_LAZY_LPRELAX 0     // we have (fractional) LP relaxtion of B&B node
+#define CSIP_LAZY_INTEGRALSOL 1 // current candidate is integer feasible
+#define CSIP_LAZY_OTHER 2       // e.g., CHECK is called on fractional candidate
+
 /* model definition */
 
 // Create a new model (and solver).
@@ -137,6 +143,10 @@ CSIP_RETCODE CSIPsetInitialSolution(CSIP_MODEL *model, double *values);
 
 typedef struct SCIP_ConshdlrData CSIP_LAZYDATA;
 
+// Get current context in which callback is called. Relates to the solution that
+// is available through CSIPlazyGetVarValues.
+CSIP_LAZY_CONTEXT CSIPlazyGetContext(CSIP_LAZYDATA *lazydata);
+
 // Copy values of current (relaxation) solution to output array. Call
 // this function from your lazy constraint callback.
 CSIP_RETCODE CSIPlazyGetVarValues(CSIP_LAZYDATA *lazydata, double *output);
@@ -152,11 +162,9 @@ typedef CSIP_RETCODE(*CSIP_LAZYCALLBACK)(
     CSIP_MODEL *model, CSIP_LAZYDATA *lazydata, void *userdata);
 
 // Add a lazy constraint callback to the model.
-// With fractional == 0, the callback is only called for solution
-// candidates that satisfy all integrality conditions.
 // You may use userdata to pass any data.
 CSIP_RETCODE CSIPaddLazyCallback(
-    CSIP_MODEL *model, CSIP_LAZYCALLBACK lazycb, int fractional, void *userdata);
+    CSIP_MODEL *model, CSIP_LAZYCALLBACK lazycb, void *userdata);
 
 /* heuristic callback functions */
 
