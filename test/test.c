@@ -227,7 +227,8 @@ struct MyData
     double *storage;
 };
 
-CSIP_RETCODE lazy_callback(CSIP_MODEL *m, CSIP_LAZYDATA *lazydata, void *userdata)
+CSIP_RETCODE lazy_callback(CSIP_MODEL *m, CSIP_LAZYDATA *lazydata,
+                           void *userdata)
 {
 
     struct MyData *data = (struct MyData *) userdata;
@@ -305,7 +306,8 @@ static void test_lazy()
     CHECK(CSIPfreeModel(m));
 }
 
-CSIP_RETCODE lazy_callback2(CSIP_MODEL *m, CSIP_LAZYDATA *lazydata, void *userdata)
+CSIP_RETCODE lazy_callback2(CSIP_MODEL *m, CSIP_LAZYDATA *lazydata,
+                            void *userdata)
 {
 
     struct MyData *data = (struct MyData *) userdata;
@@ -368,7 +370,8 @@ static void test_lazy2()
     CHECK(CSIPfreeModel(m));
 }
 
-CSIP_RETCODE lazycb_interrupt(CSIP_MODEL *m, CSIP_LAZYDATA *lazydata, void *userdata)
+CSIP_RETCODE lazycb_interrupt(CSIP_MODEL *m, CSIP_LAZYDATA *lazydata,
+                              void *userdata)
 {
     CHECK(CSIPinterrupt(m));
     return CSIP_RETCODE_OK;
@@ -540,7 +543,8 @@ struct DoubleData
     int indices[2];
 };
 
-CSIP_RETCODE doubly_lazy_cb(CSIP_MODEL *m, CSIP_LAZYDATA *lazydata, void *userdata)
+CSIP_RETCODE doubly_lazy_cb(CSIP_MODEL *m, CSIP_LAZYDATA *lazydata,
+                            void *userdata)
 {
 
     struct DoubleData *data = (struct DoubleData *) userdata;

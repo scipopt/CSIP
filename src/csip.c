@@ -808,8 +808,9 @@ CSIP_RETCODE CSIPlazyGetVarValues(CSIP_LAZYDATA *lazydata, double *output)
     return CSIP_RETCODE_OK;
 }
 
-CSIP_RETCODE CSIPlazyAddLinCons(CSIP_LAZYDATA *lazydata, int numindices, int *indices,
-                              double *coefs, double lhs, double rhs, int islocal)
+CSIP_RETCODE CSIPlazyAddLinCons(CSIP_LAZYDATA *lazydata, int numindices,
+                                int *indices,
+                                double *coefs, double lhs, double rhs, int islocal)
 {
     SCIP *scip;
     SCIP_CONS *cons;
