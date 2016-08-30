@@ -917,7 +917,7 @@ struct SCIP_HeurData
     CSIP_HEURCALLBACK callback;
     void *userdata;
     SCIP_HEUR *heur;
-    SCIP_SOL *sol;
+    unsigned int stored_sols;
 };
 
 static
@@ -941,22 +941,15 @@ SCIP_DECL_HEUREXEC(heurExecUser)
     assert(heurdata != NULL);
 
     *result = SCIP_DIDNOTFIND;
-    assert(heurdata->sol == NULL);
+    heurdata->stored_sols = 0;
 
     CSIP_in_SCIP(heurdata->callback(heurdata->model, heurdata,
                                     heurdata->userdata));
 
-    if (heurdata->sol != NULL)
+    if (heurdata->stored_sols > 0)
     {
-        unsigned int stored = 0;
-        SCIP_CALL(SCIPtrySolFree(heurdata->model->scip, &heurdata->sol,
-                                 FALSE, TRUE, TRUE, TRUE, &stored));
-        if (stored)
-        {
-            *result = SCIP_FOUNDSOL;
-        }
+        *result = SCIP_FOUNDSOL;
     }
-    assert(heurdata->sol == NULL);
 
     return SCIP_OKAY;
 }
@@ -972,12 +965,22 @@ CSIP_RETCODE CSIPheurGetVarValues(CSIP_HEURDATA *heurdata, double *output)
 }
 
 // Supply a solution (as a dense array). Only complete solutions are supported.
-CSIP_RETCODE CSIPheurSetSolution(CSIP_HEURDATA *heurdata, double *values)
+CSIP_RETCODE CSIPheurAddSolution(CSIP_HEURDATA *heurdata, double *values)
 {
+    SCIP_SOL *sol;
     CSIP_MODEL *model = heurdata->model;
-    SCIP_in_CSIP(SCIPcreateSol(model->scip, &heurdata->sol, heurdata->heur));
-    SCIP_in_CSIP(SCIPsetSolVals(model->scip, heurdata->sol, model->nvars,
-                                model->vars, values));
+    SCIP *scip = model->scip;
+    unsigned int stored = 0;
+
+    SCIP_in_CSIP(SCIPcreateSol(scip, &sol, heurdata->heur));
+    SCIP_in_CSIP(SCIPsetSolVals(scip, sol, model->nvars, model->vars, values));
+    SCIP_in_CSIP(SCIPtrySolFree(scip, &sol, FALSE, TRUE, TRUE, TRUE, &stored));
+
+    if (stored > 0)
+    {
+        heurdata->stored_sols += 1;
+    }
+
     return CSIP_RETCODE_OK;
 }
 
@@ -1003,8 +1006,8 @@ CSIP_RETCODE CSIPaddHeuristicCallback(
     heurdata->model = model;
     heurdata->callback = callback;
     heurdata->userdata = userdata;
-    heurdata->sol = NULL;
     heurdata->heur = heur;
+    heurdata->stored_sols = 0;
 
     SCIP_in_CSIP(SCIPsetHeurFree(scip, heur, heurFreeUser));
     model->nheur += 1;

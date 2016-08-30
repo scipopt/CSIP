@@ -762,7 +762,7 @@ CSIP_RETCODE heurcb(CSIP_MODEL *model, CSIP_HEURDATA *heurdata, void *userdata)
 {
     double sol[] = {2.0, 2.0};
     mu_assert("Invalid userdata", userdata == NULL);
-    CHECK(CSIPheurSetSolution(heurdata, sol));
+    CHECK(CSIPheurAddSolution(heurdata, sol));
     return CSIP_RETCODE_OK;
 }
 

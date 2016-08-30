@@ -184,7 +184,7 @@ typedef CSIP_RETCODE(*CSIP_HEURCALLBACK)(
 CSIP_RETCODE CSIPheurGetVarValues(CSIP_HEURDATA *heurdata, double *output);
 
 // Supply a solution (as a dense array). Only complete solutions are supported.
-CSIP_RETCODE CSIPheurSetSolution(CSIP_HEURDATA *heurdata, double *values);
+CSIP_RETCODE CSIPheurAddSolution(CSIP_HEURDATA *heurdata, double *values);
 
 // Add a heuristic callback to the model.
 // You may use userdata to pass any data.
