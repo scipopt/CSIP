@@ -83,6 +83,13 @@ struct csip_model
 
     // store the best bound (for after freeTransform)
     double objbound;
+
+    // store objective variable for nonlinear objective: the idea is to add an
+    // auxiliary constraint and variable to represent nonlinear objectives. If
+    // the objective gets change, we set to 0 the objective coefficient of this
+    // variable and relax its bounds so the auxiliary constraint is redundant.
+    // This is going to mess the model when printed to a file.
+    SCIP_VAR *objvar;
 };
 
 /*
@@ -199,7 +206,8 @@ CSIP_RETCODE reformSenseMinimize(CSIP_MODEL *model)
             double coef = SCIPvarGetObj(var);
             SCIP_in_CSIP(SCIPchgVarObj(model->scip, var, -1.0 * coef));
         }
-
+        // TODO: currently we don't support MAXIMIZE with nonlinear objective
+        assert(model->objvar == NULL);
     }
     return CSIP_RETCODE_OK;
 }
@@ -245,6 +253,7 @@ CSIP_RETCODE CSIPcreateModel(CSIP_MODEL **modelptr)
     model->initialsol = NULL;
     model->status = CSIP_STATUS_UNKNOWN;
     model->objbound = strtod("NaN", NULL);
+    model->objvar = NULL;
 
     CSIP_CALL(CSIPsetParameter(model, "display/width", 80));
 
@@ -275,6 +284,10 @@ CSIP_RETCODE CSIPfreeModel(CSIP_MODEL *model)
     for (i = 0; i < model->nconss; ++i)
     {
         SCIP_in_CSIP(SCIPreleaseCons(model->scip, &model->conss[i]));
+    }
+    if( model->objvar != NULL )
+    {
+        SCIP_in_CSIP(SCIPreleaseVar(model->scip, &model->objvar));
     }
     SCIP_in_CSIP(SCIPfree(&model->scip));
 
@@ -510,6 +523,77 @@ CSIP_RETCODE CSIPsetObj(CSIP_MODEL *model, int numindices, int *indices,
         var = model->vars[indices[i]];
         SCIP_in_CSIP(SCIPchgVarObj(scip, var, coefs[i]));
     }
+
+    // if nonlinear objective was set, remove objvar from objective
+    // and relax its bounds. This should render the objective constraint
+    // redundant
+    if( model->objvar != NULL )
+    {
+        SCIP_in_CSIP(SCIPchgVarObj(scip, model->objvar, 0.0));
+        SCIP_in_CSIP(SCIPchgVarLb(scip, model->objvar, -SCIPinfinity(scip)));
+        SCIP_in_CSIP(SCIPchgVarUb(scip, model->objvar, SCIPinfinity(scip)));
+
+        // we do not need to remember this variable anymore
+        SCIP_in_CSIP(SCIPreleaseVar(scip, &model->objvar));
+        assert(model->objvar == NULL);
+    }
+
+    return CSIP_RETCODE_OK;
+}
+
+CSIP_RETCODE CSIPsetQuadObj(CSIP_MODEL *model, int numlinindices,
+                             int *linindices,
+                             double *lincoefs, int numquadterms,
+                             int *quadrowindices, int *quadcolindices,
+                             double *quadcoefs)
+{
+    int i;
+    SCIP *scip;
+    SCIP_VAR *linvar;
+    SCIP_VAR *var1;
+    SCIP_VAR *var2;
+    SCIP_CONS *cons;
+
+    scip = model->scip;
+
+    SCIP_in_CSIP(SCIPcreateConsBasicQuadratic(scip, &cons, "quadcons", 0, NULL,
+                 NULL, 0, NULL, NULL, NULL, -SCIPinfinity(scip), 0.0));
+
+    for (i = 0; i < numlinindices; ++i)
+    {
+        linvar = model->vars[linindices[i]];
+        SCIP_in_CSIP(SCIPaddLinearVarQuadratic(scip, cons, linvar, lincoefs[i]));
+    }
+    for (i = 0; i < numquadterms; ++i)
+    {
+        var1 = model->vars[quadrowindices[i]];
+        var2 = model->vars[quadcolindices[i]];
+        SCIP_in_CSIP(SCIPaddBilinTermQuadratic(scip, cons, var1, var2, quadcoefs[i]));
+    }
+
+    // if nonlinear objective was set before, remove objvar from objective
+    // and relax its bounds. This should render the objective constraint
+    // redundant
+    if( model->objvar != NULL )
+    {
+        SCIP_in_CSIP(SCIPchgVarObj(scip, model->objvar, 0.0));
+        SCIP_in_CSIP(SCIPchgVarLb(scip, model->objvar, -SCIPinfinity(scip)));
+        SCIP_in_CSIP(SCIPchgVarUb(scip, model->objvar, SCIPinfinity(scip)));
+
+        // we do not need to remember this variable anymore
+        SCIP_in_CSIP(SCIPreleaseVar(scip, &model->objvar));
+    }
+    assert(model->objvar == NULL);
+    SCIP_in_CSIP(SCIPcreateVarBasic(scip, &model->objvar, NULL,
+                 -SCIPinfinity(scip), SCIPinfinity(scip), 1.0,
+                 SCIP_VARTYPE_CONTINUOUS));
+    SCIP_in_CSIP(SCIPaddVar(scip, model->objvar));
+    SCIP_in_CSIP(SCIPaddLinearVarQuadratic(scip, cons, model->objvar, -1.0));
+
+    // add objective constraint and forget about
+    // TODO: we might have to remember to correctly handle maximization problems
+    SCIP_in_CSIP(SCIPaddCons(scip, cons));
+    SCIP_in_CSIP(SCIPreleaseCons(scip, &cons));
 
     return CSIP_RETCODE_OK;
 }
