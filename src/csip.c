@@ -90,6 +90,7 @@ struct csip_model
     // variable and relax its bounds so the auxiliary constraint is redundant.
     // This is going to mess the model when printed to a file.
     SCIP_VAR *objvar;
+    SCIP_CONS *objcons;
 };
 
 /*
@@ -206,8 +207,27 @@ CSIP_RETCODE reformSenseMinimize(CSIP_MODEL *model)
             double coef = SCIPvarGetObj(var);
             SCIP_in_CSIP(SCIPchgVarObj(model->scip, var, -1.0 * coef));
         }
-        // TODO: currently we don't support MAXIMIZE with nonlinear objective
-        assert(model->objvar == NULL);
+
+        if( model->objvar != NULL )
+        {
+           // the first time we are here the problem is: max t s.t objcons - t <= 0
+           // but it should be max t s.t. objcons >= t, or equivalently
+           // min -t s.t 0 <= objcons - t
+           // the second time we are called, we have to set it back as before (TODO: is this really necessary?)
+           if( SCIPgetRhsQuadratic(model->scip, model->objcons) == 0.0 )
+           {
+              SCIP_in_CSIP(SCIPchgLhsQuadratic(model->scip, model->objcons, 0.0));
+              SCIP_in_CSIP(SCIPchgRhsQuadratic(model->scip, model->objcons, INFINITY));
+              SCIP_in_CSIP(SCIPchgVarObj(model->scip, model->objvar, -1.0));
+           }
+           else
+           {
+              /* FIXME: related to the TODO above:,this is just wrong! */
+              SCIP_in_CSIP(SCIPchgLhsQuadratic(model->scip, model->objcons, -INFINITY));
+              SCIP_in_CSIP(SCIPchgRhsQuadratic(model->scip, model->objcons, 0.0));
+              SCIP_in_CSIP(SCIPchgVarObj(model->scip, model->objvar, 1.0));
+           }
+        }
     }
     return CSIP_RETCODE_OK;
 }
@@ -254,6 +274,7 @@ CSIP_RETCODE CSIPcreateModel(CSIP_MODEL **modelptr)
     model->status = CSIP_STATUS_UNKNOWN;
     model->objbound = strtod("NaN", NULL);
     model->objvar = NULL;
+    model->objcons = NULL;
 
     CSIP_CALL(CSIPsetParameter(model, "display/width", 80));
 
@@ -287,7 +308,9 @@ CSIP_RETCODE CSIPfreeModel(CSIP_MODEL *model)
     }
     if( model->objvar != NULL )
     {
+        assert(model->objcons != NULL);
         SCIP_in_CSIP(SCIPreleaseVar(model->scip, &model->objvar));
+        SCIP_in_CSIP(SCIPreleaseCons(model->scip, &model->objcons));
     }
     SCIP_in_CSIP(SCIPfree(&model->scip));
 
@@ -533,9 +556,11 @@ CSIP_RETCODE CSIPsetObj(CSIP_MODEL *model, int numindices, int *indices,
         SCIP_in_CSIP(SCIPchgVarLb(scip, model->objvar, -SCIPinfinity(scip)));
         SCIP_in_CSIP(SCIPchgVarUb(scip, model->objvar, SCIPinfinity(scip)));
 
-        // we do not need to remember this variable anymore
+        // we do not need to remember this variable anymore nor the objcons
         SCIP_in_CSIP(SCIPreleaseVar(scip, &model->objvar));
+        SCIP_in_CSIP(SCIPreleaseCons(scip, &model->objcons));
         assert(model->objvar == NULL);
+        assert(model->objcons == NULL);
     }
 
     return CSIP_RETCODE_OK;
@@ -580,20 +605,21 @@ CSIP_RETCODE CSIPsetQuadObj(CSIP_MODEL *model, int numlinindices,
         SCIP_in_CSIP(SCIPchgVarLb(scip, model->objvar, -SCIPinfinity(scip)));
         SCIP_in_CSIP(SCIPchgVarUb(scip, model->objvar, SCIPinfinity(scip)));
 
-        // we do not need to remember this variable anymore
+        // we do not need to remember this variable anymore nor objcons
         SCIP_in_CSIP(SCIPreleaseVar(scip, &model->objvar));
+        SCIP_in_CSIP(SCIPreleaseCons(scip, &model->objcons));
     }
     assert(model->objvar == NULL);
+    assert(model->objcons == NULL);
     SCIP_in_CSIP(SCIPcreateVarBasic(scip, &model->objvar, NULL,
                  -SCIPinfinity(scip), SCIPinfinity(scip), 1.0,
                  SCIP_VARTYPE_CONTINUOUS));
     SCIP_in_CSIP(SCIPaddVar(scip, model->objvar));
     SCIP_in_CSIP(SCIPaddLinearVarQuadratic(scip, cons, model->objvar, -1.0));
 
-    // add objective constraint and forget about
-    // TODO: we might have to remember to correctly handle maximization problems
+    // add objective constraint and remember it
     SCIP_in_CSIP(SCIPaddCons(scip, cons));
-    SCIP_in_CSIP(SCIPreleaseCons(scip, &cons));
+    model->objcons = cons;
 
     return CSIP_RETCODE_OK;
 }

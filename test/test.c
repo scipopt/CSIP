@@ -724,7 +724,7 @@ static void test_changequadprob()
       s.t. x + y >= 1
       -> {0.5, 0.5}
 
-      min x^2 - y
+      max -x^2 + y
           x + y == 1
           -> (-0.5, 1.5)
      */
@@ -772,14 +772,15 @@ static void test_changequadprob()
 
 
     // second problem, modifying the first
-    CHECK(CSIPsetQuadObj(m, 1, &linindices[1], (double[]){-1.0}, 1, quadi, quadj, quadcoef));
+    CHECK(CSIPsetSenseMaximize(m));
+    CHECK(CSIPsetQuadObj(m, 1, &linindices[1], (double[]){1.0}, 1, quadi, quadj, (double[]){-1.0}));
 
     // sparse constraint
     CHECK(CSIPaddLinCons(m, 2, linindices, lincoef, -INFINITY, 1.0, NULL));
 
     CHECK(CSIPsolve(m));
     mu_assert_int("Wrong status!", CSIPgetStatus(m), CSIP_STATUS_OPTIMAL);
-    mu_assert_near("Wrong objective value!", CSIPgetObjValue(m), -1.25);
+    mu_assert_near("Wrong objective value!", CSIPgetObjValue(m), 1.25);
 
     CHECK(CSIPgetVarValues(m, solution));
     // use weaker check, because of nonlinear constraint's abstol
