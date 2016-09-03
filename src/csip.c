@@ -208,25 +208,25 @@ CSIP_RETCODE reformSenseMinimize(CSIP_MODEL *model)
             SCIP_in_CSIP(SCIPchgVarObj(model->scip, var, -1.0 * coef));
         }
 
-        if( model->objvar != NULL )
+        if (model->objvar != NULL)
         {
-           // the first time we are here the problem is: max t s.t objcons - t <= 0
-           // but it should be max t s.t. objcons >= t, or equivalently
-           // min -t s.t 0 <= objcons - t
-           // the second time we are called, we have to set it back as before (TODO: is this really necessary?)
-           if( SCIPgetRhsQuadratic(model->scip, model->objcons) == 0.0 )
-           {
-              SCIP_in_CSIP(SCIPchgLhsQuadratic(model->scip, model->objcons, 0.0));
-              SCIP_in_CSIP(SCIPchgRhsQuadratic(model->scip, model->objcons, INFINITY));
-              SCIP_in_CSIP(SCIPchgVarObj(model->scip, model->objvar, -1.0));
-           }
-           else
-           {
-              /* FIXME: related to the TODO above:,this is just wrong! */
-              SCIP_in_CSIP(SCIPchgLhsQuadratic(model->scip, model->objcons, -INFINITY));
-              SCIP_in_CSIP(SCIPchgRhsQuadratic(model->scip, model->objcons, 0.0));
-              SCIP_in_CSIP(SCIPchgVarObj(model->scip, model->objvar, 1.0));
-           }
+            // the first time we are here the problem is: max t s.t objcons - t <= 0
+            // but it should be max t s.t. objcons >= t, or equivalently
+            // min -t s.t 0 <= objcons - t
+            // the second time we are called, we have to set it back as before (TODO: is this really necessary?)
+            if (SCIPgetRhsQuadratic(model->scip, model->objcons) == 0.0)
+            {
+                SCIP_in_CSIP(SCIPchgLhsQuadratic(model->scip, model->objcons, 0.0));
+                SCIP_in_CSIP(SCIPchgRhsQuadratic(model->scip, model->objcons, INFINITY));
+                SCIP_in_CSIP(SCIPchgVarObj(model->scip, model->objvar, -1.0));
+            }
+            else
+            {
+                /* FIXME: related to the TODO above:,this is just wrong! */
+                SCIP_in_CSIP(SCIPchgLhsQuadratic(model->scip, model->objcons, -INFINITY));
+                SCIP_in_CSIP(SCIPchgRhsQuadratic(model->scip, model->objcons, 0.0));
+                SCIP_in_CSIP(SCIPchgVarObj(model->scip, model->objvar, 1.0));
+            }
         }
     }
     return CSIP_RETCODE_OK;
@@ -306,7 +306,7 @@ CSIP_RETCODE CSIPfreeModel(CSIP_MODEL *model)
     {
         SCIP_in_CSIP(SCIPreleaseCons(model->scip, &model->conss[i]));
     }
-    if( model->objvar != NULL )
+    if (model->objvar != NULL)
     {
         assert(model->objcons != NULL);
         SCIP_in_CSIP(SCIPreleaseVar(model->scip, &model->objvar));
@@ -550,7 +550,7 @@ CSIP_RETCODE CSIPsetObj(CSIP_MODEL *model, int numindices, int *indices,
     // if nonlinear objective was set, remove objvar from objective
     // and relax its bounds. This should render the objective constraint
     // redundant
-    if( model->objvar != NULL )
+    if (model->objvar != NULL)
     {
         SCIP_in_CSIP(SCIPchgVarObj(scip, model->objvar, 0.0));
         SCIP_in_CSIP(SCIPchgVarLb(scip, model->objvar, -SCIPinfinity(scip)));
@@ -567,10 +567,10 @@ CSIP_RETCODE CSIPsetObj(CSIP_MODEL *model, int numindices, int *indices,
 }
 
 CSIP_RETCODE CSIPsetQuadObj(CSIP_MODEL *model, int numlinindices,
-                             int *linindices,
-                             double *lincoefs, int numquadterms,
-                             int *quadrowindices, int *quadcolindices,
-                             double *quadcoefs)
+                            int *linindices,
+                            double *lincoefs, int numquadterms,
+                            int *quadrowindices, int *quadcolindices,
+                            double *quadcoefs)
 {
     int i;
     SCIP *scip;
@@ -599,7 +599,7 @@ CSIP_RETCODE CSIPsetQuadObj(CSIP_MODEL *model, int numlinindices,
     // if nonlinear objective was set before, remove objvar from objective
     // and relax its bounds. This should render the objective constraint
     // redundant
-    if( model->objvar != NULL )
+    if (model->objvar != NULL)
     {
         SCIP_in_CSIP(SCIPchgVarObj(scip, model->objvar, 0.0));
         SCIP_in_CSIP(SCIPchgVarLb(scip, model->objvar, -SCIPinfinity(scip)));
@@ -612,8 +612,8 @@ CSIP_RETCODE CSIPsetQuadObj(CSIP_MODEL *model, int numlinindices,
     assert(model->objvar == NULL);
     assert(model->objcons == NULL);
     SCIP_in_CSIP(SCIPcreateVarBasic(scip, &model->objvar, NULL,
-                 -SCIPinfinity(scip), SCIPinfinity(scip), 1.0,
-                 SCIP_VARTYPE_CONTINUOUS));
+                                    -SCIPinfinity(scip), SCIPinfinity(scip), 1.0,
+                                    SCIP_VARTYPE_CONTINUOUS));
     SCIP_in_CSIP(SCIPaddVar(scip, model->objvar));
     SCIP_in_CSIP(SCIPaddLinearVarQuadratic(scip, cons, model->objvar, -1.0));
 

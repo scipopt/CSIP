@@ -773,7 +773,13 @@ static void test_changequadprob()
 
     // second problem, modifying the first
     CHECK(CSIPsetSenseMaximize(m));
-    CHECK(CSIPsetQuadObj(m, 1, &linindices[1], (double[]){1.0}, 1, quadi, quadj, (double[]){-1.0}));
+    CHECK(CSIPsetQuadObj(m, 1, &linindices[1], (double[])
+    {
+        1.0
+    }, 1, quadi, quadj, (double[])
+    {
+        -1.0
+    }));
 
     // sparse constraint
     CHECK(CSIPaddLinCons(m, 2, linindices, lincoef, -INFINITY, 1.0, NULL));
