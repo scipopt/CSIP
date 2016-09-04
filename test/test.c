@@ -223,6 +223,62 @@ static void test_socp()
     CHECK(CSIPfreeModel(m));
 }
 
+static void test_nlp()
+{
+    /*
+      Small NLP:
+      max x + y - z^3
+      s.t. z^2 <= 1
+      x, y <= 0
+      solution is 0, 0, -1
+    */
+    int nops = 3;
+    int ops[] = {1, 2, 14}; // TODO: we need an enum!
+    int children[] = {2, 0, 0, 1};
+    int begin[] = {0, 1, 2, 4};
+    double values[] = {2.0};
+    double lhs = -INFINITY;
+    double rhs = 1;
+    CSIP_MODEL *m;
+    double solution[3];
+
+    CHECK(CSIPcreateModel(&m));
+    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+
+    int x_idx, y_idx, z_idx;
+    CHECK(CSIPaddVar(m, -INFINITY, 0.0, CSIP_VARTYPE_CONTINUOUS, &x_idx));
+    CHECK(CSIPaddVar(m, -INFINITY, 0.0, CSIP_VARTYPE_CONTINUOUS, &y_idx));
+    CHECK(CSIPaddVar(m, -INFINITY, INFINITY, CSIP_VARTYPE_CONTINUOUS, &z_idx));
+    mu_assert_int("Wrong var index!", x_idx, 0);
+    mu_assert_int("Wrong var index!", y_idx, 1);
+    mu_assert_int("Wrong var index!", z_idx, 2);
+
+    int cons_idx;
+    CHECK(CSIPaddNonLinCons(m, nops, ops, children, begin, values, lhs, rhs, &cons_idx));
+    mu_assert_int("Wrong cons index!", cons_idx, 0);
+
+    CHECK(CSIPsetNonlinearObj(m, 7,
+             (int[]){VARIDX, VARIDX, VARIDX, CONST, POW, MINUS, SUM},
+             (int[]){0,1,2,0,2,3,4,0,1,5},
+             (int[]){0,1,2,3,4,  6,7,   10},
+             (double[]){3.0}));
+    CHECK(CSIPsetSenseMaximize(m));
+    CHECK(CSIPsolve(m));
+
+    int solvestatus = CSIPgetStatus(m);
+    mu_assert_int("Wrong status!", solvestatus, CSIP_STATUS_OPTIMAL);
+
+    double objval = CSIPgetObjValue(m);
+    mu_assert_near("Wrong objective value!", objval, 1.0);
+
+    CHECK(CSIPgetVarValues(m, solution));
+    mu_assert_near("Wrong solution!", solution[0], 0.0);
+    mu_assert_near("Wrong solution!", solution[1], 0.0);
+    mu_assert_near("Wrong solution!", solution[2], -1.0);
+
+    CHECK(CSIPfreeModel(m));
+}
+
 struct MyData
 {
     int foo;
@@ -824,6 +880,7 @@ int main(int argc, char **argv)
     mu_run_test(test_mip2);
     mu_run_test(test_mip3);
     mu_run_test(test_socp);
+    mu_run_test(test_nlp);
     mu_run_test(test_lazy);
     mu_run_test(test_lazy2);
     mu_run_test(test_lazy_interrupt);

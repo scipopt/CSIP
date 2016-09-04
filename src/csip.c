@@ -1,4 +1,5 @@
 #include "csip.h"
+#include "nlpi/pub_expr.h"
 #include "scip/scip.h"
 #include "scip/pub_misc.h"
 #include "scip/pub_var.h"
@@ -83,6 +84,15 @@ struct csip_model
 
     // store the best bound (for after freeTransform)
     double objbound;
+
+    // store objective variable for nonlinear objective: the idea is to add an
+    // auxiliary constraint and variable to represent nonlinear objectives. If
+    // the objective gets change, we set to 0 the objective coefficient of this
+    // variable and relax its bounds so the auxiliary constraint is redundant.
+    // This is going to mess the model when printed to a file.
+    SCIP_VAR *objvar;
+    SCIP_CONS *objcons;
+    CSIP_OBJTYPE objtype;
 };
 
 /*
@@ -200,6 +210,29 @@ CSIP_RETCODE reformSenseMinimize(CSIP_MODEL *model)
             SCIP_in_CSIP(SCIPchgVarObj(model->scip, var, -1.0 * coef));
         }
 
+        if( model->objvar != NULL )
+        {
+           // the first time we are here the problem is: max t s.t objcons - t <= 0
+           // but it should be max t s.t. objcons >= t, or equivalently
+           // min t s.t -t - objcons <= 0
+           // the second time we are called, we have to set it back as before (TODO: is this really necessary?)
+           if( model->objtype == CSIP_OBJTYPE_NONLINEAR )
+           {
+              SCIP_EXPRTREE* exprtree;
+              SCIP_Real exprtreecoef;
+
+              // we need to copy the tree, because SCIPsetExprtreesNonlinear
+              // is going to delete it
+              SCIP_in_CSIP(SCIPexprtreeCopy(SCIPblkmem(model->scip),
+                       &exprtree,
+                       SCIPgetExprtreesNonlinear(model->scip, model->objcons)[0]
+                       ));
+              exprtreecoef = -SCIPgetExprtreeCoefsNonlinear(model->scip, model->objcons)[0];
+
+              SCIP_in_CSIP(SCIPsetExprtreesNonlinear(model->scip,
+                          model->objcons, 1, &exprtree, &exprtreecoef));
+           }
+        }
     }
     return CSIP_RETCODE_OK;
 }
@@ -245,6 +278,9 @@ CSIP_RETCODE CSIPcreateModel(CSIP_MODEL **modelptr)
     model->initialsol = NULL;
     model->status = CSIP_STATUS_UNKNOWN;
     model->objbound = strtod("NaN", NULL);
+    model->objvar = NULL;
+    model->objcons = NULL;
+    model->objtype = CSIP_OBJTYPE_LINEAR;
 
     CSIP_CALL(CSIPsetParameter(model, "display/width", 80));
 
@@ -275,6 +311,12 @@ CSIP_RETCODE CSIPfreeModel(CSIP_MODEL *model)
     for (i = 0; i < model->nconss; ++i)
     {
         SCIP_in_CSIP(SCIPreleaseCons(model->scip, &model->conss[i]));
+    }
+    if( model->objvar != NULL )
+    {
+        assert(model->objcons != NULL);
+        SCIP_in_CSIP(SCIPreleaseVar(model->scip, &model->objvar));
+        SCIP_in_CSIP(SCIPreleaseCons(model->scip, &model->objcons));
     }
     SCIP_in_CSIP(SCIPfree(&model->scip));
 
@@ -448,6 +490,142 @@ CSIP_RETCODE CSIPaddQuadCons(CSIP_MODEL *model, int numlinindices,
     return CSIP_RETCODE_OK;
 }
 
+// we might be assuming that the indices of the children of op[k]
+// are always <= k (when op[k] is not VARIDX nor CONST)
+// this implies that the root expression is the last one, which is
+// another assumption
+CSIP_RETCODE CSIPaddNonLinCons(
+    CSIP_MODEL *model, int nops, int *ops, int *children, int* begin,
+    double *values, double lhs, double rhs, int *idx)
+{
+    SCIP* scip;
+    SCIP_EXPRTREE *tree;
+    SCIP_EXPR **exprs;
+    SCIP_VAR **vars;
+    SCIP_CONS *cons;
+    int nvars;
+    int varpos;
+    int i;
+
+    scip = model->scip;
+    exprs = (SCIP_EXPR **) malloc(nops * sizeof(SCIP_EXPR *));
+    nvars = 0;
+    for( i = 0; i < nops; ++i )
+    {
+       exprs[i] = NULL;
+       nvars += (ops[i] == SCIP_EXPR_VARIDX);
+    }
+    vars = (SCIP_VAR **) malloc(nvars * sizeof(SCIP_VAR *));
+
+    varpos = 0;
+    for( i = 0; i < nops; ++i )
+    {
+       switch (ops[i])
+       {
+          case SCIP_EXPR_VARIDX:
+             {
+                int varidx = children[begin[i]];
+                assert(1 == begin[i+1] - begin[i]);
+                assert(varidx < model->nvars);
+                SCIP_in_CSIP( SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
+                         ops[i], varpos) );
+                vars[varpos] = model->vars[varidx];
+                ++varpos;
+                //printf("Seeing variable %d (nchild %d)\n", varidx, begin[i+1] - begin[i]);
+             }
+             break;
+          case SCIP_EXPR_CONST:
+             assert(1 == begin[i+1] - begin[i]);
+             SCIP_in_CSIP( SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
+                      ops[i], values[children[begin[i]]]) );
+             //printf("Seeing constant %g (nchild %d)\n", values[children[begin[i]]], begin[i+1] - begin[i]);
+             break;
+          case SCIP_EXPR_MINUS:
+             // if we have two children it is a proper minus; otherwise just -1 * ...
+             if( begin[i+1] - begin[i] == 2 )
+             {
+                SCIP_in_CSIP( SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
+                         ops[i], exprs[children[begin[i]]], exprs[children[begin[i]+1]]) );
+             }
+             else
+             {
+                SCIP_EXPR *zeroexpr;
+                assert(1 == begin[i+1] - begin[i]);
+                SCIP_in_CSIP( SCIPexprCreate(SCIPblkmem(scip), &zeroexpr,
+                         SCIP_EXPR_CONST, 0.0) );
+                // expression is 0 - child
+                SCIP_in_CSIP( SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
+                         ops[i], zeroexpr, exprs[children[begin[i]]]) );
+             }
+             //printf("Seeing a minus (nchild %d)\n",  begin[i+1] - begin[i]);
+             break;
+          case SCIP_EXPR_REALPOWER:
+             assert(2 == begin[i+1] - begin[i]);
+             {
+                double exponent;
+                // the second child is the exponent which is a const
+                exponent = values[children[begin[children[begin[i]+1]]]];
+                //printf("Seeing a power with exponent %g (nchild %d)\n", exponent, begin[i+1] - begin[i]);
+                SCIP_in_CSIP( SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
+                         ops[i], exprs[children[begin[i]]], exponent) );
+             }
+             break;
+          case SCIP_EXPR_DIV:
+             assert(2 == begin[i+1] - begin[i]);
+             SCIP_in_CSIP( SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
+                      ops[i], exprs[children[begin[i]]], exprs[children[begin[i]+1]]) );
+             //printf("Seeing a division (nchild %d)\n",  begin[i+1] - begin[i]);
+             break;
+          case SCIP_EXPR_SQRT:
+          case SCIP_EXPR_EXP:
+          case SCIP_EXPR_LOG:
+             assert(1 == begin[i+1] - begin[i]);
+             SCIP_in_CSIP( SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
+                      ops[i], exprs[children[begin[i]]]) );
+             //printf("Seeing a sqrt/exp/log (nchild %d)\n",  begin[i+1] - begin[i]);
+             break;
+          case SCIP_EXPR_SUM:
+          case SCIP_EXPR_PRODUCT:
+             {
+                SCIP_EXPR **childrenexpr;
+                int nchildren = begin[i+1] - begin[i];
+                int c;
+                childrenexpr = (SCIP_EXPR **) malloc(nchildren * sizeof(SCIP_EXPR *));
+                for( c = 0; c < nchildren; ++c )
+                   childrenexpr[c] = exprs[children[begin[i] + c]];
+
+                SCIP_in_CSIP( SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
+                         ops[i], nchildren, childrenexpr) );
+
+                free(childrenexpr);
+                //printf("Seeing a sum/product (nchild %d)\n",  begin[i+1] - begin[i]);
+             }
+             break;
+          default: // don't support
+             printf("I don't know what I am seeing %d\n",  ops[i]);
+             return CSIP_RETCODE_ERROR;
+       }
+    }
+    assert(varpos == nvars);
+    // last expression is root
+    assert(exprs[nops-1] != NULL);
+    SCIP_in_CSIP( SCIPexprtreeCreate(SCIPblkmem(scip), &tree, exprs[nops-1], nvars, 0, NULL) );
+
+    // assign variables to tree
+    SCIP_in_CSIP( SCIPexprtreeSetVars(tree, nvars, vars) );
+
+    // create nonlinear constraint
+    SCIP_in_CSIP( SCIPcreateConsBasicNonlinear(scip, &cons, "nonlin", 0, NULL, NULL, 1, &tree, NULL, lhs, rhs) );
+
+    // free memory
+    SCIP_in_CSIP( SCIPexprtreeFree(&tree) );
+    free(vars);
+    free(exprs);
+
+    CSIP_CALL(addCons(model, cons, idx));
+    return CSIP_RETCODE_OK;
+}
+
 CSIP_RETCODE CSIPaddSOS1(
     CSIP_MODEL *model, int numindices, int *indices, double *weights, int *idx)
 {
@@ -510,6 +688,183 @@ CSIP_RETCODE CSIPsetObj(CSIP_MODEL *model, int numindices, int *indices,
         var = model->vars[indices[i]];
         SCIP_in_CSIP(SCIPchgVarObj(scip, var, coefs[i]));
     }
+    model->objtype = CSIP_OBJTYPE_LINEAR;
+
+    // if nonlinear objective was set, remove objvar from objective
+    // and relax its bounds. This should render the objective constraint
+    // redundant
+    if( model->objvar != NULL )
+    {
+        SCIP_in_CSIP(SCIPchgVarObj(scip, model->objvar, 0.0));
+        SCIP_in_CSIP(SCIPchgVarLb(scip, model->objvar, -SCIPinfinity(scip)));
+        SCIP_in_CSIP(SCIPchgVarUb(scip, model->objvar, SCIPinfinity(scip)));
+
+        // we do not need to remember this variable anymore nor the objcons
+        SCIP_in_CSIP(SCIPreleaseVar(scip, &model->objvar));
+        SCIP_in_CSIP(SCIPreleaseCons(scip, &model->objcons));
+        assert(model->objvar == NULL);
+        assert(model->objcons == NULL);
+    }
+
+    return CSIP_RETCODE_OK;
+}
+
+// TODO: this should of course be refactored with addnonlincons
+CSIP_RETCODE CSIPsetNonlinearObj(
+    CSIP_MODEL *model, int nops, int *ops, int *children, int* begin,
+    double *values)
+{
+    SCIP* scip;
+    SCIP_EXPRTREE *tree;
+    SCIP_EXPR **exprs;
+    SCIP_VAR **vars;
+    SCIP_CONS *cons;
+    int nvars;
+    int varpos;
+    int i;
+
+    scip = model->scip;
+    exprs = (SCIP_EXPR **) malloc(nops * sizeof(SCIP_EXPR *));
+    nvars = 0;
+    for( i = 0; i < nops; ++i )
+    {
+       exprs[i] = NULL;
+       nvars += (ops[i] == SCIP_EXPR_VARIDX);
+    }
+    vars = (SCIP_VAR **) malloc(nvars * sizeof(SCIP_VAR *));
+
+    varpos = 0;
+    for( i = 0; i < nops; ++i )
+    {
+       switch (ops[i])
+       {
+          case SCIP_EXPR_VARIDX:
+             {
+                int varidx = children[begin[i]];
+                assert(1 == begin[i+1] - begin[i]);
+                assert(varidx < model->nvars);
+                SCIP_in_CSIP( SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
+                         ops[i], varpos) );
+                vars[varpos] = model->vars[varidx];
+                ++varpos;
+                //printf("Seeing variable %d (nchild %d)\n", varidx, begin[i+1] - begin[i]);
+             }
+             break;
+          case SCIP_EXPR_CONST:
+             assert(1 == begin[i+1] - begin[i]);
+             SCIP_in_CSIP( SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
+                      ops[i], values[children[begin[i]]]) );
+             //printf("Seeing constant %g (nchild %d)\n", values[children[begin[i]]], begin[i+1] - begin[i]);
+             break;
+          case SCIP_EXPR_MINUS:
+             // if we have two children it is a proper minus; otherwise just -1 * ...
+             if( begin[i+1] - begin[i] == 2 )
+             {
+                SCIP_in_CSIP( SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
+                         ops[i], exprs[children[begin[i]]], exprs[children[begin[i]+1]]) );
+             }
+             else
+             {
+                SCIP_EXPR *zeroexpr;
+                assert(1 == begin[i+1] - begin[i]);
+                SCIP_in_CSIP( SCIPexprCreate(SCIPblkmem(scip), &zeroexpr,
+                         SCIP_EXPR_CONST, 0.0) );
+                // expression is 0 - child
+                SCIP_in_CSIP( SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
+                         ops[i], zeroexpr, exprs[children[begin[i]]]) );
+             }
+             //printf("Seeing a minus (nchild %d)\n",  begin[i+1] - begin[i]);
+             break;
+          case SCIP_EXPR_REALPOWER:
+             assert(2 == begin[i+1] - begin[i]);
+             {
+                double exponent;
+                // the second child is the exponent which is a const
+                exponent = values[children[begin[children[begin[i]+1]]]];
+                //printf("Seeing a power with exponent %g (nchild %d)\n", exponent, begin[i+1] - begin[i]);
+                SCIP_in_CSIP( SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
+                         ops[i], exprs[children[begin[i]]], exponent) );
+             }
+             break;
+          case SCIP_EXPR_DIV:
+             assert(2 == begin[i+1] - begin[i]);
+             SCIP_in_CSIP( SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
+                      ops[i], exprs[children[begin[i]]], exprs[children[begin[i]+1]]) );
+             //printf("Seeing a division (nchild %d)\n",  begin[i+1] - begin[i]);
+             break;
+          case SCIP_EXPR_SQRT:
+          case SCIP_EXPR_EXP:
+          case SCIP_EXPR_LOG:
+             assert(1 == begin[i+1] - begin[i]);
+             SCIP_in_CSIP( SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
+                      ops[i], exprs[children[begin[i]]]) );
+             //printf("Seeing a sqrt/exp/log (nchild %d)\n",  begin[i+1] - begin[i]);
+             break;
+          case SCIP_EXPR_SUM:
+          case SCIP_EXPR_PRODUCT:
+             {
+                SCIP_EXPR **childrenexpr;
+                int nchildren = begin[i+1] - begin[i];
+                int c;
+                childrenexpr = (SCIP_EXPR **) malloc(nchildren * sizeof(SCIP_EXPR *));
+                for( c = 0; c < nchildren; ++c )
+                   childrenexpr[c] = exprs[children[begin[i] + c]];
+
+                SCIP_in_CSIP( SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
+                         ops[i], nchildren, childrenexpr) );
+
+                free(childrenexpr);
+                //printf("Seeing a sum/product (nchild %d)\n",  begin[i+1] - begin[i]);
+             }
+             break;
+          default: // don't support
+             printf("I don't know what I am seeing %d\n",  ops[i]);
+             return CSIP_RETCODE_ERROR;
+       }
+    }
+    assert(varpos == nvars);
+    // last expression is root
+    assert(exprs[nops-1] != NULL);
+    SCIP_in_CSIP( SCIPexprtreeCreate(SCIPblkmem(scip), &tree, exprs[nops-1], nvars, 0, NULL) );
+
+    // assign variables to tree
+    SCIP_in_CSIP( SCIPexprtreeSetVars(tree, nvars, vars) );
+
+    // create nonlinear objective constraint
+    SCIP_in_CSIP( SCIPcreateConsBasicNonlinear(scip, &cons,
+             "nonlin_obj", 0, NULL, NULL, 1, &tree, NULL,
+             -SCIPinfinity(scip), 0.0) );
+
+    // add objvar to nonlinear objective
+    if( model->objvar != NULL )
+    {
+        SCIP_in_CSIP(SCIPchgVarObj(scip, model->objvar, 0.0));
+        SCIP_in_CSIP(SCIPchgVarLb(scip, model->objvar, -SCIPinfinity(scip)));
+        SCIP_in_CSIP(SCIPchgVarUb(scip, model->objvar, SCIPinfinity(scip)));
+
+        // we do not need to remember this variable anymore nor objcons
+        SCIP_in_CSIP(SCIPreleaseVar(scip, &model->objvar));
+        SCIP_in_CSIP(SCIPreleaseCons(scip, &model->objcons));
+    }
+    assert(model->objvar == NULL);
+    assert(model->objcons == NULL);
+
+    SCIP_in_CSIP(SCIPcreateVarBasic(scip, &model->objvar, NULL,
+                 -SCIPinfinity(scip), SCIPinfinity(scip), 1.0,
+                 SCIP_VARTYPE_CONTINUOUS));
+    SCIP_in_CSIP(SCIPaddVar(scip, model->objvar));
+    SCIP_in_CSIP(SCIPaddLinearVarNonlinear(scip, cons, model->objvar, -1.0));
+
+    // add objective constraint and remember it
+    SCIP_in_CSIP(SCIPaddCons(scip, cons));
+    model->objcons = cons;
+    model->objtype = CSIP_OBJTYPE_NONLINEAR;
+
+
+    // free memory
+    SCIP_in_CSIP( SCIPexprtreeFree(&tree) );
+    free(vars);
+    free(exprs);
 
     return CSIP_RETCODE_OK;
 }
