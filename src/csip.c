@@ -203,6 +203,135 @@ CSIP_RETCODE addCons(CSIP_MODEL *model, SCIP_CONS *cons, int *idx)
     return CSIP_RETCODE_OK;
 }
 
+static
+CSIP_RETCODE createExprtree(
+    CSIP_MODEL *model, int nops, int *ops, int *children, int *begin,
+    double *values, SCIP_EXPRTREE **tree)
+{
+    SCIP *scip;
+    SCIP_EXPR **exprs;
+    SCIP_VAR **vars;
+    int varpos;
+    int i;
+    int nvars;
+
+    scip = model->scip;
+    exprs = (SCIP_EXPR **) malloc(nops * sizeof(SCIP_EXPR *));
+    nvars = 0;
+    for (i = 0; i < nops; ++i)
+    {
+        exprs[i] = NULL;
+        nvars += (ops[i] == SCIP_EXPR_VARIDX);
+    }
+    vars = (SCIP_VAR **) malloc(nvars * sizeof(SCIP_VAR *));
+
+    varpos = 0;
+    for (i = 0; i < nops; ++i)
+    {
+        switch (ops[i])
+        {
+        case SCIP_EXPR_VARIDX:
+            {
+                int varidx = children[begin[i]];
+                assert(1 == begin[i + 1] - begin[i]);
+                assert(varidx < model->nvars);
+                SCIP_in_CSIP(SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
+                                            ops[i], varpos));
+                vars[varpos] = model->vars[varidx];
+                ++varpos;
+                //printf("Seeing variable %d (nchild %d)\n", varidx, begin[i+1] - begin[i]);
+            }
+            break;
+        case SCIP_EXPR_CONST:
+            assert(1 == begin[i + 1] - begin[i]);
+            SCIP_in_CSIP(SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
+                                        ops[i], values[children[begin[i]]]));
+            //printf("Seeing constant %g (nchild %d)\n", values[children[begin[i]]], begin[i+1] - begin[i]);
+            break;
+        case SCIP_EXPR_MINUS:
+            // if we have two children it is a proper minus; otherwise just -1 * ...
+            if (begin[i + 1] - begin[i] == 2)
+            {
+                SCIP_in_CSIP(SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
+                                            ops[i], exprs[children[begin[i]]], exprs[children[begin[i] + 1]]));
+            }
+            else
+            {
+                SCIP_EXPR *zeroexpr;
+                assert(1 == begin[i + 1] - begin[i]);
+                SCIP_in_CSIP(SCIPexprCreate(SCIPblkmem(scip), &zeroexpr,
+                                            SCIP_EXPR_CONST, 0.0));
+                // expression is 0 - child
+                SCIP_in_CSIP(SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
+                                            ops[i], zeroexpr, exprs[children[begin[i]]]));
+            }
+            //printf("Seeing a minus (nchild %d)\n",  begin[i+1] - begin[i]);
+            break;
+        case SCIP_EXPR_REALPOWER:
+            assert(2 == begin[i + 1] - begin[i]);
+            {
+                double exponent;
+                // the second child is the exponent which is a const
+                exponent = values[children[begin[children[begin[i] + 1]]]];
+                //printf("Seeing a power with exponent %g (nchild %d)\n", exponent, begin[i+1] - begin[i]);
+                SCIP_in_CSIP(SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
+                                            ops[i], exprs[children[begin[i]]], exponent));
+            }
+            break;
+        case SCIP_EXPR_DIV:
+            assert(2 == begin[i + 1] - begin[i]);
+            SCIP_in_CSIP(SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
+                                        ops[i], exprs[children[begin[i]]], exprs[children[begin[i] + 1]]));
+            //printf("Seeing a division (nchild %d)\n",  begin[i+1] - begin[i]);
+            break;
+        case SCIP_EXPR_SQRT:
+        case SCIP_EXPR_EXP:
+        case SCIP_EXPR_LOG:
+            assert(1 == begin[i + 1] - begin[i]);
+            SCIP_in_CSIP(SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
+                                        ops[i], exprs[children[begin[i]]]));
+            //printf("Seeing a sqrt/exp/log (nchild %d)\n",  begin[i+1] - begin[i]);
+            break;
+        case SCIP_EXPR_SUM:
+        case SCIP_EXPR_PRODUCT:
+            {
+                SCIP_EXPR **childrenexpr;
+                int nchildren = begin[i + 1] - begin[i];
+                int c;
+                childrenexpr = (SCIP_EXPR **) malloc(nchildren * sizeof(SCIP_EXPR *));
+                for (c = 0; c < nchildren; ++c)
+                {
+                    childrenexpr[c] = exprs[children[begin[i] + c]];
+                }
+
+                SCIP_in_CSIP(SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
+                                            ops[i], nchildren, childrenexpr));
+
+                free(childrenexpr);
+                //printf("Seeing a sum/product (nchild %d)\n",  begin[i+1] - begin[i]);
+            }
+            break;
+        default: // don't support
+            printf("I don't know what I am seeing %d\n",  ops[i]);
+            return CSIP_RETCODE_ERROR;
+        }
+    }
+    assert(varpos == nvars);
+    // last expression is root
+    assert(exprs[nops - 1] != NULL);
+    SCIP_in_CSIP(SCIPexprtreeCreate(SCIPblkmem(scip), tree, exprs[nops - 1], nvars,
+                                    0, NULL));
+
+    // assign variables to tree
+    SCIP_in_CSIP(SCIPexprtreeSetVars(*tree, nvars, vars));
+
+    // free memory
+    free(vars);
+    free(exprs);
+
+    return CSIP_RETCODE_OK;
+}
+
 CSIP_RETCODE reformSenseMinimize(CSIP_MODEL *model)
 {
     if (model->sense == SCIP_OBJSENSE_MAXIMIZE)
@@ -505,133 +634,22 @@ CSIP_RETCODE CSIPaddNonLinCons(
 {
     SCIP *scip;
     SCIP_EXPRTREE *tree;
-    SCIP_EXPR **exprs;
-    SCIP_VAR **vars;
     SCIP_CONS *cons;
-    int nvars;
-    int varpos;
-    int i;
+
+    CSIP_CALL(createExprtree(model, nops, ops, children, begin,
+             values, &tree));
 
     scip = model->scip;
-    exprs = (SCIP_EXPR **) malloc(nops * sizeof(SCIP_EXPR *));
-    nvars = 0;
-    for (i = 0; i < nops; ++i)
-    {
-        exprs[i] = NULL;
-        nvars += (ops[i] == SCIP_EXPR_VARIDX);
-    }
-    vars = (SCIP_VAR **) malloc(nvars * sizeof(SCIP_VAR *));
-
-    varpos = 0;
-    for (i = 0; i < nops; ++i)
-    {
-        switch (ops[i])
-        {
-        case SCIP_EXPR_VARIDX:
-            {
-                int varidx = children[begin[i]];
-                assert(1 == begin[i + 1] - begin[i]);
-                assert(varidx < model->nvars);
-                SCIP_in_CSIP(SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
-                                            ops[i], varpos));
-                vars[varpos] = model->vars[varidx];
-                ++varpos;
-                //printf("Seeing variable %d (nchild %d)\n", varidx, begin[i+1] - begin[i]);
-            }
-            break;
-        case SCIP_EXPR_CONST:
-            assert(1 == begin[i + 1] - begin[i]);
-            SCIP_in_CSIP(SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
-                                        ops[i], values[children[begin[i]]]));
-            //printf("Seeing constant %g (nchild %d)\n", values[children[begin[i]]], begin[i+1] - begin[i]);
-            break;
-        case SCIP_EXPR_MINUS:
-            // if we have two children it is a proper minus; otherwise just -1 * ...
-            if (begin[i + 1] - begin[i] == 2)
-            {
-                SCIP_in_CSIP(SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
-                                            ops[i], exprs[children[begin[i]]], exprs[children[begin[i] + 1]]));
-            }
-            else
-            {
-                SCIP_EXPR *zeroexpr;
-                assert(1 == begin[i + 1] - begin[i]);
-                SCIP_in_CSIP(SCIPexprCreate(SCIPblkmem(scip), &zeroexpr,
-                                            SCIP_EXPR_CONST, 0.0));
-                // expression is 0 - child
-                SCIP_in_CSIP(SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
-                                            ops[i], zeroexpr, exprs[children[begin[i]]]));
-            }
-            //printf("Seeing a minus (nchild %d)\n",  begin[i+1] - begin[i]);
-            break;
-        case SCIP_EXPR_REALPOWER:
-            assert(2 == begin[i + 1] - begin[i]);
-            {
-                double exponent;
-                // the second child is the exponent which is a const
-                exponent = values[children[begin[children[begin[i] + 1]]]];
-                //printf("Seeing a power with exponent %g (nchild %d)\n", exponent, begin[i+1] - begin[i]);
-                SCIP_in_CSIP(SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
-                                            ops[i], exprs[children[begin[i]]], exponent));
-            }
-            break;
-        case SCIP_EXPR_DIV:
-            assert(2 == begin[i + 1] - begin[i]);
-            SCIP_in_CSIP(SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
-                                        ops[i], exprs[children[begin[i]]], exprs[children[begin[i] + 1]]));
-            //printf("Seeing a division (nchild %d)\n",  begin[i+1] - begin[i]);
-            break;
-        case SCIP_EXPR_SQRT:
-        case SCIP_EXPR_EXP:
-        case SCIP_EXPR_LOG:
-            assert(1 == begin[i + 1] - begin[i]);
-            SCIP_in_CSIP(SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
-                                        ops[i], exprs[children[begin[i]]]));
-            //printf("Seeing a sqrt/exp/log (nchild %d)\n",  begin[i+1] - begin[i]);
-            break;
-        case SCIP_EXPR_SUM:
-        case SCIP_EXPR_PRODUCT:
-            {
-                SCIP_EXPR **childrenexpr;
-                int nchildren = begin[i + 1] - begin[i];
-                int c;
-                childrenexpr = (SCIP_EXPR **) malloc(nchildren * sizeof(SCIP_EXPR *));
-                for (c = 0; c < nchildren; ++c)
-                {
-                    childrenexpr[c] = exprs[children[begin[i] + c]];
-                }
-
-                SCIP_in_CSIP(SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
-                                            ops[i], nchildren, childrenexpr));
-
-                free(childrenexpr);
-                //printf("Seeing a sum/product (nchild %d)\n",  begin[i+1] - begin[i]);
-            }
-            break;
-        default: // don't support
-            printf("I don't know what I am seeing %d\n",  ops[i]);
-            return CSIP_RETCODE_ERROR;
-        }
-    }
-    assert(varpos == nvars);
-    // last expression is root
-    assert(exprs[nops - 1] != NULL);
-    SCIP_in_CSIP(SCIPexprtreeCreate(SCIPblkmem(scip), &tree, exprs[nops - 1], nvars,
-                                    0, NULL));
-
-    // assign variables to tree
-    SCIP_in_CSIP(SCIPexprtreeSetVars(tree, nvars, vars));
 
     // create nonlinear constraint
     SCIP_in_CSIP(SCIPcreateConsBasicNonlinear(scip, &cons, "nonlin", 0, NULL, NULL,
                  1, &tree, NULL, lhs, rhs));
 
+    CSIP_CALL(addCons(model, cons, idx));
+
     // free memory
     SCIP_in_CSIP(SCIPexprtreeFree(&tree));
-    free(vars);
-    free(exprs);
 
-    CSIP_CALL(addCons(model, cons, idx));
     return CSIP_RETCODE_OK;
 }
 
@@ -718,129 +736,18 @@ CSIP_RETCODE CSIPsetObj(CSIP_MODEL *model, int numindices, int *indices,
     return CSIP_RETCODE_OK;
 }
 
-// TODO: this should of course be refactored with addnonlincons
 CSIP_RETCODE CSIPsetNonlinearObj(
     CSIP_MODEL *model, int nops, int *ops, int *children, int *begin,
     double *values)
 {
     SCIP *scip;
     SCIP_EXPRTREE *tree;
-    SCIP_EXPR **exprs;
-    SCIP_VAR **vars;
     SCIP_CONS *cons;
-    int nvars;
-    int varpos;
-    int i;
+
+    CSIP_CALL(createExprtree(model, nops, ops, children, begin,
+             values, &tree));
 
     scip = model->scip;
-    exprs = (SCIP_EXPR **) malloc(nops * sizeof(SCIP_EXPR *));
-    nvars = 0;
-    for (i = 0; i < nops; ++i)
-    {
-        exprs[i] = NULL;
-        nvars += (ops[i] == SCIP_EXPR_VARIDX);
-    }
-    vars = (SCIP_VAR **) malloc(nvars * sizeof(SCIP_VAR *));
-
-    varpos = 0;
-    for (i = 0; i < nops; ++i)
-    {
-        switch (ops[i])
-        {
-        case SCIP_EXPR_VARIDX:
-            {
-                int varidx = children[begin[i]];
-                assert(1 == begin[i + 1] - begin[i]);
-                assert(varidx < model->nvars);
-                SCIP_in_CSIP(SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
-                                            ops[i], varpos));
-                vars[varpos] = model->vars[varidx];
-                ++varpos;
-                //printf("Seeing variable %d (nchild %d)\n", varidx, begin[i+1] - begin[i]);
-            }
-            break;
-        case SCIP_EXPR_CONST:
-            assert(1 == begin[i + 1] - begin[i]);
-            SCIP_in_CSIP(SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
-                                        ops[i], values[children[begin[i]]]));
-            //printf("Seeing constant %g (nchild %d)\n", values[children[begin[i]]], begin[i+1] - begin[i]);
-            break;
-        case SCIP_EXPR_MINUS:
-            // if we have two children it is a proper minus; otherwise just -1 * ...
-            if (begin[i + 1] - begin[i] == 2)
-            {
-                SCIP_in_CSIP(SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
-                                            ops[i], exprs[children[begin[i]]], exprs[children[begin[i] + 1]]));
-            }
-            else
-            {
-                SCIP_EXPR *zeroexpr;
-                assert(1 == begin[i + 1] - begin[i]);
-                SCIP_in_CSIP(SCIPexprCreate(SCIPblkmem(scip), &zeroexpr,
-                                            SCIP_EXPR_CONST, 0.0));
-                // expression is 0 - child
-                SCIP_in_CSIP(SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
-                                            ops[i], zeroexpr, exprs[children[begin[i]]]));
-            }
-            //printf("Seeing a minus (nchild %d)\n",  begin[i+1] - begin[i]);
-            break;
-        case SCIP_EXPR_REALPOWER:
-            assert(2 == begin[i + 1] - begin[i]);
-            {
-                double exponent;
-                // the second child is the exponent which is a const
-                exponent = values[children[begin[children[begin[i] + 1]]]];
-                //printf("Seeing a power with exponent %g (nchild %d)\n", exponent, begin[i+1] - begin[i]);
-                SCIP_in_CSIP(SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
-                                            ops[i], exprs[children[begin[i]]], exponent));
-            }
-            break;
-        case SCIP_EXPR_DIV:
-            assert(2 == begin[i + 1] - begin[i]);
-            SCIP_in_CSIP(SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
-                                        ops[i], exprs[children[begin[i]]], exprs[children[begin[i] + 1]]));
-            //printf("Seeing a division (nchild %d)\n",  begin[i+1] - begin[i]);
-            break;
-        case SCIP_EXPR_SQRT:
-        case SCIP_EXPR_EXP:
-        case SCIP_EXPR_LOG:
-            assert(1 == begin[i + 1] - begin[i]);
-            SCIP_in_CSIP(SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
-                                        ops[i], exprs[children[begin[i]]]));
-            //printf("Seeing a sqrt/exp/log (nchild %d)\n",  begin[i+1] - begin[i]);
-            break;
-        case SCIP_EXPR_SUM:
-        case SCIP_EXPR_PRODUCT:
-            {
-                SCIP_EXPR **childrenexpr;
-                int nchildren = begin[i + 1] - begin[i];
-                int c;
-                childrenexpr = (SCIP_EXPR **) malloc(nchildren * sizeof(SCIP_EXPR *));
-                for (c = 0; c < nchildren; ++c)
-                {
-                    childrenexpr[c] = exprs[children[begin[i] + c]];
-                }
-
-                SCIP_in_CSIP(SCIPexprCreate(SCIPblkmem(scip), &exprs[i],
-                                            ops[i], nchildren, childrenexpr));
-
-                free(childrenexpr);
-                //printf("Seeing a sum/product (nchild %d)\n",  begin[i+1] - begin[i]);
-            }
-            break;
-        default: // don't support
-            printf("I don't know what I am seeing %d\n",  ops[i]);
-            return CSIP_RETCODE_ERROR;
-        }
-    }
-    assert(varpos == nvars);
-    // last expression is root
-    assert(exprs[nops - 1] != NULL);
-    SCIP_in_CSIP(SCIPexprtreeCreate(SCIPblkmem(scip), &tree, exprs[nops - 1], nvars,
-                                    0, NULL));
-
-    // assign variables to tree
-    SCIP_in_CSIP(SCIPexprtreeSetVars(tree, nvars, vars));
 
     // create nonlinear objective constraint
     SCIP_in_CSIP(SCIPcreateConsBasicNonlinear(scip, &cons,
@@ -872,11 +779,8 @@ CSIP_RETCODE CSIPsetNonlinearObj(
     model->objcons = cons;
     model->objtype = CSIP_OBJTYPE_NONLINEAR;
 
-
     // free memory
     SCIP_in_CSIP(SCIPexprtreeFree(&tree));
-    free(vars);
-    free(exprs);
 
     return CSIP_RETCODE_OK;
 }
