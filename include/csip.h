@@ -119,7 +119,7 @@ CSIP_RETCODE CSIPaddQuadCons(
 // CONSTR are 0 -> the value with index 0 (2.0)
 // POWER are 0, 1 -> the variable and the const (x_2 ^ 2.0)
 CSIP_RETCODE CSIPaddNonLinCons(
-    CSIP_MODEL *model, int nops, int *ops, int *children, int* begin,
+    CSIP_MODEL *model, int nops, int *ops, int *children, int *begin,
     double *values, double lhs, double rhs, int *idx);
 
 // Add SOS1 (special ordered set of type 1) constraint on a set of
@@ -145,7 +145,7 @@ CSIP_RETCODE CSIPsetObj(
 // Set a nonlinear objective function. See CSIPaddNonLinCons for an explanation
 // about the format
 CSIP_RETCODE CSIPsetNonlinearObj(
-    CSIP_MODEL *model, int nops, int *ops, int *children, int* begin,
+    CSIP_MODEL *model, int nops, int *ops, int *children, int *begin,
     double *values);
 
 // Set the optimization sense to minimization. This is the default setting.

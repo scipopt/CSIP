@@ -254,7 +254,8 @@ static void test_nlp()
     mu_assert_int("Wrong var index!", z_idx, 2);
 
     int cons_idx;
-    CHECK(CSIPaddNonLinCons(m, nops, ops, children, begin, values, lhs, rhs, &cons_idx));
+    CHECK(CSIPaddNonLinCons(m, nops, ops, children, begin, values, lhs, rhs,
+                            &cons_idx));
     mu_assert_int("Wrong cons index!", cons_idx, 0);
 
     CHECK(CSIPsetNonlinearObj(m, 7,
