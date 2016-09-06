@@ -138,9 +138,9 @@ CSIP_RETCODE CSIPsetObj(
 
 // Set a quadratic objective function
 CSIP_RETCODE CSIPsetQuadObj(CSIP_MODEL *model, int numlinindices,
-      int *linindices, double *lincoefs, int numquadterms,
-      int *quadrowindices, int *quadcolindices,
-      double *quadcoefs);
+                            int *linindices, double *lincoefs, int numquadterms,
+                            int *quadrowindices, int *quadcolindices,
+                            double *quadcoefs);
 
 // Set a nonlinear objective function. See CSIPaddNonLinCons for an explanation
 // about the format
