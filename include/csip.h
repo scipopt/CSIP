@@ -31,12 +31,6 @@ typedef int CSIP_LAZY_CONTEXT;
 #define CSIP_LAZY_INTEGRALSOL 1 // current candidate is integer feasible
 #define CSIP_LAZY_OTHER 2       // e.g., CHECK is called on fractional candidate
 
-/* objective type */
-typedef int CSIP_OBJTYPE;
-#define CSIP_OBJTYPE_LINEAR 0
-#define CSIP_OBJTYPE_QUADRATIC 1
-#define CSIP_OBJTYPE_NONLINEAR 2
-
 /* nonlinear operators */
 typedef int CSIP_OP;
 #define VARIDX 1

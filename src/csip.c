@@ -5,6 +5,11 @@
 #include "scip/pub_var.h"
 #include "scip/scipdefplugins.h"
 
+/* objective type */
+typedef int CSIP_OBJTYPE;
+#define CSIP_OBJTYPE_LINEAR 0
+#define CSIP_OBJTYPE_NONLINEAR 1
+
 // map return codes: SCIP -> CSIP
 static inline int retCodeSCIPtoCSIP(int scipRetCode)
 {
