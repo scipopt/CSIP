@@ -736,6 +736,123 @@ CSIP_RETCODE CSIPsetObj(CSIP_MODEL *model, int numindices, int *indices,
     return CSIP_RETCODE_OK;
 }
 
+CSIP_RETCODE CSIPsetQuadObj(CSIP_MODEL *model, int numlinindices,
+      int *linindices, double *lincoefs, int numquadterms,
+      int *quadrowindices, int *quadcolindices,
+      double *quadcoefs)
+{
+    int nprods;
+    int i;
+    int opidx;
+    int nops;
+    int nchildren;
+    int* ops;
+    int* children;
+    int* begin;
+    int* prodindices;
+    double* values;
+
+    // build the expression representation of a quadratic
+    // there are: numlinindices VARIDX, CONST and PROD for the linear part
+    // nquadterms VARIDX, VARIDX, CONST and PROD for the quadratic part
+    // So there are 3*numlindices + 4*nquadterms operators plus 1 (the sum)
+    // Number of children: each VARIDX and CONST contribute with one:
+    // nchildren >= 2*numlinindices + 3*nquadterms
+    // Then each PROD in numlinindices contribute with 2 and in nquadterms with 3
+    // nchildren >= 4*numlinindices + 6*nquadterms
+    // The final sum has as many children as products are there, nlinind + nquadterms
+    // nchildren = 5*numlinindices + 7*nquadterms
+    // NOTE: we will need to store the indices of the PROD operators
+    //       and all coefs in a single array `values`
+    nprods = numquadterms + numlinindices;
+    nchildren = 5*numlinindices + 7*numquadterms;
+    nops = 3*numlinindices + 4*numquadterms + 1;
+
+    ops = (int *) malloc(nops * sizeof(double));
+    children = (int *) malloc(nchildren * sizeof(int));
+    begin = (int *) malloc((nops + 1) * sizeof(int));
+    values = (double *) malloc(nprods * sizeof(double));
+    prodindices = (int *) malloc(nprods * sizeof(int));
+
+    begin[0] = 0;
+    opidx = -1;
+    // linear part
+    for( i = 0; i < numlinindices; ++i )
+    {
+       // variable
+       ++opidx;
+       ops[opidx] = VARIDX;
+       begin[opidx+1] = begin[opidx] + 1; // where its children end
+       children[begin[opidx]] = linindices[i]; //children
+
+       // next operator: coef
+       ++opidx;
+       ops[opidx] = CONST;
+       begin[opidx+1] = begin[opidx] + 1;
+       children[begin[opidx]] = i;
+       values[i] = lincoefs[i];
+
+       // next operator: PROD between coef and variable
+       ++opidx;
+       ops[opidx] = PROD;
+       begin[opidx+1] = begin[opidx] + 2;
+       children[begin[opidx]] = opidx-2;
+       children[begin[opidx]+1] = opidx-1;
+
+       prodindices[i] = opidx;
+    }
+    // quadratic part
+    for( i = 0; i < numquadterms; ++i )
+    {
+       // variable 1
+       ++opidx;
+       ops[opidx] = VARIDX;
+       begin[opidx+1] = begin[opidx] + 1; // where its children end
+       children[begin[opidx]] = quadrowindices[i]; //children
+
+       // variable 2
+       ++opidx;
+       ops[opidx] = VARIDX;
+       begin[opidx+1] = begin[opidx] + 1; // where its children end
+       children[begin[opidx]] = quadcolindices[i]; //children
+
+       // coef
+       ++opidx;
+       ops[opidx] = CONST;
+       begin[opidx+1] = begin[opidx] + 1;
+       children[begin[opidx]] = i+numlinindices;
+       values[i+numlinindices] = quadcoefs[i];
+
+       // next operator: PROD between var1, var2 and coef
+       ++opidx;
+       ops[opidx] = PROD;
+       begin[opidx+1] = begin[opidx] + 3;
+       children[begin[opidx]] = opidx-3;
+       children[begin[opidx]+1] = opidx-2;
+       children[begin[opidx]+2] = opidx-1;
+
+       prodindices[i+numlinindices] = opidx;
+    }
+
+    // sum all PRODs
+    ++opidx;
+    ops[opidx] = SUM;
+    begin[opidx+1] = begin[opidx] + nprods;
+    for( i = 0; i < nprods; ++i )
+       children[begin[opidx]+i] = prodindices[i];
+
+    CSIP_CALL(CSIPsetNonlinearObj(model, nops, ops, children, begin, values));
+
+    // free everything
+    free(ops);
+    free(children);
+    free(begin);
+    free(values);
+    free(prodindices);
+
+    return CSIP_RETCODE_OK;
+}
+
 CSIP_RETCODE CSIPsetNonlinearObj(
     CSIP_MODEL *model, int nops, int *ops, int *children, int *begin,
     double *values)
