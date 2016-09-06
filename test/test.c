@@ -233,12 +233,18 @@ static void test_nlp()
       solution is 0, 0, -1
     */
     int nops = 3;
-    int ops[] = {1, 2, 14}; // TODO: we need an enum!
+    CSIP_OP ops[] = {VARIDX, CONST, POW};
     int children[] = {2, 0, 0, 1};
     int begin[] = {0, 1, 2, 4};
     double values[] = {2.0};
     double lhs = -INFINITY;
     double rhs = 1;
+
+    CSIP_OP obj_ops[] = {VARIDX, VARIDX, VARIDX, CONST, POW, MINUS, SUM};
+    int obj_children[] = {0, 1, 2, 0, 2, 3, 4, 0, 1, 5};
+    int obj_begin[] = {0, 1, 2, 3, 4, 6, 7, 10};
+    double obj_values[] = {3.0};
+
     CSIP_MODEL *m;
     double solution[3];
 
@@ -258,11 +264,7 @@ static void test_nlp()
                             &cons_idx));
     mu_assert_int("Wrong cons index!", cons_idx, 0);
 
-    CHECK(CSIPsetNonlinearObj(m, 7,
-             (int[]){VARIDX, VARIDX, VARIDX, CONST, POW, MINUS, SUM},
-             (int[]){0,1,2,0,2,3,4,0,1,5},
-             (int[]){0,1,2,3,4,  6,7,   10},
-             (double[]){3.0}));
+    CHECK(CSIPsetNonlinearObj(m, 7, obj_ops, obj_children, obj_begin, obj_values));
     CHECK(CSIPsetSenseMaximize(m));
     CHECK(CSIPsolve(m));
 
@@ -791,6 +793,7 @@ static void test_changequadprob()
     int quadi[] = {0, 1};
     int quadj[] = {0, 1};
     double quadcoef[] = {1.0, 1.0};
+    double quadcoef2[] = { -1.0};
     double solution[3];
 
     CSIP_MODEL *m;
@@ -830,8 +833,8 @@ static void test_changequadprob()
 
     // second problem, modifying the first
     CHECK(CSIPsetSenseMaximize(m));
-    CHECK(CSIPsetQuadObj(m, 1, &linindices[1], (double[]){1.0},
-             1, quadi, quadj, (double[]){-1.0}));
+    CHECK(CSIPsetQuadObj(m, 1, &linindices[1], &lincoef[1], 1, quadi, quadj,
+                         quadcoef2));
 
     // sparse constraint
     CHECK(CSIPaddLinCons(m, 2, linindices, lincoef, -INFINITY, 1.0, NULL));
