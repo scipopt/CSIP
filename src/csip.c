@@ -205,7 +205,7 @@ CSIP_RETCODE addCons(CSIP_MODEL *model, SCIP_CONS *cons, int *idx)
 
 static
 CSIP_RETCODE createExprtree(
-    CSIP_MODEL *model, int nops, int *ops, int *children, int *begin,
+    CSIP_MODEL *model, int nops, CSIP_OP *ops, int *children, int *begin,
     double *values, SCIP_EXPRTREE **tree)
 {
     SCIP *scip;
@@ -629,7 +629,7 @@ CSIP_RETCODE CSIPaddQuadCons(CSIP_MODEL *model, int numlinindices,
 // this implies that the root expression is the last one, which is
 // another assumption
 CSIP_RETCODE CSIPaddNonLinCons(
-    CSIP_MODEL *model, int nops, int *ops, int *children, int *begin,
+    CSIP_MODEL *model, int nops, CSIP_OP *ops, int *children, int *begin,
     double *values, double lhs, double rhs, int *idx)
 {
     SCIP *scip;
@@ -746,7 +746,7 @@ CSIP_RETCODE CSIPsetQuadObj(CSIP_MODEL *model, int numlinindices,
     int opidx;
     int nops;
     int nchildren;
-    int* ops;
+    CSIP_OP* ops;
     int* children;
     int* begin;
     int* prodindices;
@@ -768,7 +768,7 @@ CSIP_RETCODE CSIPsetQuadObj(CSIP_MODEL *model, int numlinindices,
     nchildren = 5*numlinindices + 7*numquadterms;
     nops = 3*numlinindices + 4*numquadterms + 1;
 
-    ops = (int *) malloc(nops * sizeof(double));
+    ops = (int *) malloc(nops * sizeof(CSIP_OP));
     children = (int *) malloc(nchildren * sizeof(int));
     begin = (int *) malloc((nops + 1) * sizeof(int));
     values = (double *) malloc(nprods * sizeof(double));
@@ -854,7 +854,7 @@ CSIP_RETCODE CSIPsetQuadObj(CSIP_MODEL *model, int numlinindices,
 }
 
 CSIP_RETCODE CSIPsetNonlinearObj(
-    CSIP_MODEL *model, int nops, int *ops, int *children, int *begin,
+    CSIP_MODEL *model, int nops, CSIP_OP *ops, int *children, int *begin,
     double *values)
 {
     SCIP *scip;
