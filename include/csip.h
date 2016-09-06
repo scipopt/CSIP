@@ -31,6 +31,19 @@ typedef int CSIP_LAZY_CONTEXT;
 #define CSIP_LAZY_INTEGRALSOL 1 // current candidate is integer feasible
 #define CSIP_LAZY_OTHER 2       // e.g., CHECK is called on fractional candidate
 
+/* nonlinear operators */
+typedef int CSIP_OP;
+#define VARIDX 1
+#define CONST 2
+#define MINUS 9
+#define DIV 11
+#define OPSQRT 13
+#define POW 14
+#define EXP 17
+#define LOG 18
+#define SUM 64
+#define PROD 65
+
 /* model definition */
 
 // Create a new model (and solver).
@@ -79,6 +92,30 @@ CSIP_RETCODE CSIPaddQuadCons(
     int numquadterms, int *quadrowindices, int *quadcolindices,
     double *quadcoefs, double lhs, double rhs, int *idx);
 
+// Add new nonlinear constraint to the model, of the form:
+//    lhs <= expression <= rhs
+// For one-sided inequalities, use (-)INFINITY for lhs or rhs.
+// The expression is represented as follows:
+// An array of operations, an array with the children of each operation
+// and an array indicating which children are from which operation (begin):
+// The children of op[k] are the ops/vars/values indexed from begin[k] until
+// begin[k+1]-1.
+// The child of VARIDX represents the index of the variable.
+// The child of CONST represents the index of the constant in the value array.
+// All others refer to indices in the op array.
+// As an example: if we have a problem with variables x_0, x_1, x_2
+// and we want to represent x_2^2, then we have operators:
+// [VARIDX, CONST, POWER], with children
+// [2, 0, 0, 1] and values [2.0]. begin is given by
+// [0, 1, 2,   4] which means that the children of
+// VARIDX are 2 -> the variables with index 2 (x_2)
+// CONST are 0 -> the value with index 0 (2.0)
+// POWER are 0, 1 -> the variable and the const (x_2 ^ 2.0)
+// The constraint index will be assigned to idx; pass NULL if not needed.
+CSIP_RETCODE CSIPaddNonLinCons(
+    CSIP_MODEL *model, int nops, CSIP_OP *ops, int *children, int *begin,
+    double *values, double lhs, double rhs, int *idx);
+
 // Add SOS1 (special ordered set of type 1) constraint on a set of
 // variables. That is, at most one variable is allowed to take on a
 // nonzero value.
@@ -98,6 +135,18 @@ CSIP_RETCODE CSIPaddSOS2(
 // Set the linear objective function of the form: sum_i coefs[i] * vars[i]
 CSIP_RETCODE CSIPsetObj(
     CSIP_MODEL *model, int numindices, int *indices, double *coefs);
+
+// Set a quadratic objective function
+CSIP_RETCODE CSIPsetQuadObj(CSIP_MODEL *model, int numlinindices,
+                            int *linindices, double *lincoefs, int numquadterms,
+                            int *quadrowindices, int *quadcolindices,
+                            double *quadcoefs);
+
+// Set a nonlinear objective function. See CSIPaddNonLinCons for an explanation
+// about the format
+CSIP_RETCODE CSIPsetNonlinearObj(
+    CSIP_MODEL *model, int nops, int *ops, int *children, int *begin,
+    double *values);
 
 // Set the optimization sense to minimization. This is the default setting.
 CSIP_RETCODE CSIPsetSenseMinimize(CSIP_MODEL *model);

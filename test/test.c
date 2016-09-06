@@ -223,6 +223,117 @@ static void test_socp()
     CHECK(CSIPfreeModel(m));
 }
 
+static void test_nlp()
+{
+    /*
+      Small NLP:
+      max x + y - z^3
+      s.t. z^2 <= 1
+      x, y <= 0
+      solution is 0, 0, -1
+    */
+    int nops = 3;
+    CSIP_OP ops[] = {VARIDX, CONST, POW};
+    int children[] = {2, 0, 0, 1};
+    int begin[] = {0, 1, 2, 4};
+    double values[] = {2.0};
+    double lhs = -INFINITY;
+    double rhs = 1;
+
+    CSIP_OP obj_ops[] = {VARIDX, VARIDX, VARIDX, CONST, POW, MINUS, SUM};
+    int obj_children[] = {0, 1, 2, 0, 2, 3, 4, 0, 1, 5};
+    int obj_begin[] = {0, 1, 2, 3, 4, 6, 7, 10};
+    double obj_values[] = {3.0};
+
+    CSIP_MODEL *m;
+    double solution[3];
+
+    CHECK(CSIPcreateModel(&m));
+    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+
+    int x_idx, y_idx, z_idx;
+    CHECK(CSIPaddVar(m, -INFINITY, 0.0, CSIP_VARTYPE_CONTINUOUS, &x_idx));
+    CHECK(CSIPaddVar(m, -INFINITY, 0.0, CSIP_VARTYPE_CONTINUOUS, &y_idx));
+    CHECK(CSIPaddVar(m, -INFINITY, INFINITY, CSIP_VARTYPE_CONTINUOUS, &z_idx));
+    mu_assert_int("Wrong var index!", x_idx, 0);
+    mu_assert_int("Wrong var index!", y_idx, 1);
+    mu_assert_int("Wrong var index!", z_idx, 2);
+
+    int cons_idx;
+    CHECK(CSIPaddNonLinCons(m, nops, ops, children, begin, values, lhs, rhs,
+                            &cons_idx));
+    mu_assert_int("Wrong cons index!", cons_idx, 0);
+
+    CHECK(CSIPsetNonlinearObj(m, 7, obj_ops, obj_children, obj_begin, obj_values));
+    CHECK(CSIPsetSenseMaximize(m));
+    CHECK(CSIPsolve(m));
+
+    int solvestatus = CSIPgetStatus(m);
+    mu_assert_int("Wrong status!", solvestatus, CSIP_STATUS_OPTIMAL);
+
+    double objval = CSIPgetObjValue(m);
+    mu_assert_near("Wrong objective value!", objval, 1.0);
+
+    CHECK(CSIPgetVarValues(m, solution));
+    mu_assert_near("Wrong solution!", solution[0], 0.0);
+    mu_assert_near("Wrong solution!", solution[1], 0.0);
+    mu_assert_near("Wrong solution!", solution[2], -1.0);
+
+    CHECK(CSIPfreeModel(m));
+}
+
+static void test_quadobj()
+{
+    /*
+      min x^2 + y^2
+      s.t. x + y >= 1
+      -> {0.5, 0.5}
+     */
+
+    int linindices[] = {0, 1};
+    double lincoef[] = {1.0, 1.0};
+    int quadi[] = {0, 1};
+    int quadj[] = {0, 1};
+    double quadcoef[] = {1.0, 1.0};
+    double solution[3];
+
+    CSIP_MODEL *m;
+
+    CHECK(CSIPcreateModel(&m));
+    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+
+    // x
+    CHECK(CSIPaddVar(m, -INFINITY, INFINITY, CSIP_VARTYPE_CONTINUOUS, NULL));
+    // y
+    CHECK(CSIPaddVar(m, -INFINITY, INFINITY, CSIP_VARTYPE_CONTINUOUS, NULL));
+
+    mu_assert_int("Wrong number of vars!", CSIPgetNumVars(m), 2);
+
+    // sparse quadratic objective
+    CHECK(CSIPsetQuadObj(m, 0, NULL, NULL, 2, quadi, quadj, quadcoef));
+
+    // sparse constraint
+    CHECK(CSIPaddLinCons(m, 2, linindices, lincoef, 1.0, INFINITY, NULL));
+
+    mu_assert_int("Wrong number of conss!", CSIPgetNumConss(m), 1);
+
+    CHECK(CSIPsolve(m));
+
+    int solvestatus = CSIPgetStatus(m);
+    mu_assert_int("Wrong status!", solvestatus, CSIP_STATUS_OPTIMAL);
+
+    double objval = CSIPgetObjValue(m);
+    mu_assert_near("Wrong objective value!", objval, 0.5);
+
+    CHECK(CSIPgetVarValues(m, solution));
+
+    // use weaker check, because of nonlinear constraint's abstol
+    mu_assert("Wrong solution!", fabs(solution[0] - 0.5) < 0.01);
+    mu_assert("Wrong solution!", fabs(solution[1] - 0.5) < 0.01);
+
+    CHECK(CSIPfreeModel(m));
+}
+
 struct MyData
 {
     int foo;
@@ -665,6 +776,82 @@ static void test_changeprob()
     CHECK(CSIPfreeModel(m));
 }
 
+static void test_changequadprob()
+{
+    /* Solve two problems in a row:
+      min x^2 + y^2
+      s.t. x + y >= 1
+      -> {0.5, 0.5}
+
+      max -x^2 + y
+          x + y == 1
+          -> (-0.5, 1.5)
+     */
+
+    int linindices[] = {0, 1};
+    double lincoef[] = {1.0, 1.0};
+    int quadi[] = {0, 1};
+    int quadj[] = {0, 1};
+    double quadcoef[] = {1.0, 1.0};
+    double quadcoef2[] = { -1.0};
+    double solution[3];
+
+    CSIP_MODEL *m;
+
+    CHECK(CSIPcreateModel(&m));
+    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+
+    // x
+    CHECK(CSIPaddVar(m, -INFINITY, INFINITY, CSIP_VARTYPE_CONTINUOUS, NULL));
+    // y
+    CHECK(CSIPaddVar(m, -INFINITY, INFINITY, CSIP_VARTYPE_CONTINUOUS, NULL));
+
+    mu_assert_int("Wrong number of vars!", CSIPgetNumVars(m), 2);
+
+    // sparse quadratic objective
+    CHECK(CSIPsetQuadObj(m, 0, NULL, NULL, 2, quadi, quadj, quadcoef));
+
+    // sparse constraint
+    CHECK(CSIPaddLinCons(m, 2, linindices, lincoef, 1.0, INFINITY, NULL));
+
+    mu_assert_int("Wrong number of conss!", CSIPgetNumConss(m), 1);
+
+    CHECK(CSIPsolve(m));
+
+    int solvestatus = CSIPgetStatus(m);
+    mu_assert_int("Wrong status!", solvestatus, CSIP_STATUS_OPTIMAL);
+
+    double objval = CSIPgetObjValue(m);
+    mu_assert_near("Wrong objective value!", objval, 0.5);
+
+    CHECK(CSIPgetVarValues(m, solution));
+
+    // use weaker check, because of nonlinear constraint's abstol
+    mu_assert("Wrong solution!", fabs(solution[0] - 0.5) < 0.01);
+    mu_assert("Wrong solution!", fabs(solution[1] - 0.5) < 0.01);
+
+
+    // second problem, modifying the first
+    CHECK(CSIPsetSenseMaximize(m));
+    CHECK(CSIPsetQuadObj(m, 1, &linindices[1], &lincoef[1], 1, quadi, quadj,
+                         quadcoef2));
+
+    // sparse constraint
+    CHECK(CSIPaddLinCons(m, 2, linindices, lincoef, -INFINITY, 1.0, NULL));
+
+    CHECK(CSIPsolve(m));
+    mu_assert_int("Wrong status!", CSIPgetStatus(m), CSIP_STATUS_OPTIMAL);
+    mu_assert_near("Wrong objective value!", CSIPgetObjValue(m), 1.25);
+
+    CHECK(CSIPgetVarValues(m, solution));
+    // use weaker check, because of nonlinear constraint's abstol
+    mu_assert("Wrong solution!", fabs(solution[0] + 0.5) < 0.01);
+    mu_assert("Wrong solution!", fabs(solution[1] - 1.5) < 0.01);
+
+    CHECK(CSIPfreeModel(m));
+}
+
+
 static void test_changevartype()
 {
     // solve two problems in a row:
@@ -824,6 +1011,8 @@ int main(int argc, char **argv)
     mu_run_test(test_mip2);
     mu_run_test(test_mip3);
     mu_run_test(test_socp);
+    mu_run_test(test_nlp);
+    mu_run_test(test_quadobj);
     mu_run_test(test_lazy);
     mu_run_test(test_lazy2);
     mu_run_test(test_lazy_interrupt);
@@ -834,6 +1023,7 @@ int main(int argc, char **argv)
     mu_run_test(test_manythings);
     mu_run_test(test_doublelazy);
     mu_run_test(test_changeprob);
+    mu_run_test(test_changequadprob);
     mu_run_test(test_changevartype);
     mu_run_test(test_initialsol);
     mu_run_test(test_heurcb);
