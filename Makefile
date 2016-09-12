@@ -59,30 +59,29 @@ test:
 	$(TESTBIN)
 
 .PHONY: links
-links: 
-	@echo "please create links to scip/src and libscipopt; if you get them wrong, call make links to try again. \n\
-	Links will be created at $(CSIPLIBDIR). Press return if not needed"
-	@echo "Ok, first scip/src: it should be something like path_to_scipoptsuite/scip-VERSION/src"
-	@bash -ec 'cd lib; \
-		eval read -e TARGET; \
-		if test "$$TARGET" != "" ; \
+links:
+	@echo "Creating symbolic links to headers and library within SCIPOPTDIR ($(SCIPOPTDIR))."
+	@bash -c 'cd lib; \
+		if [ -e $(SCIPOPTDIR)/scip-*/src/scip/scip.h ] ; \
 		then \
-			echo "Creating link: ln -s $$TARGET"; \
-			ln -s $$TARGET include; \
+			ln -s $(SCIPOPTDIR)/scip-*/src include; \
 		else \
-			echo "skipped creation of softlink" ; \
+			echo "ERROR: no SCIP headers found in SCIPOPTDIR!" ; \
+			cd ..; \
+			rmdir lib; \
+	        exit 1; \
 		fi ; \
 		cd ..;\
 		'
-	@echo "Now libscipopt.so: it should be something like path_to_scipoptsuite/lib/libscipopt.so"
-	@bash -ec 'cd lib; \
-		eval read -e TARGET; \
-		if test "$$TARGET" != "" ; \
+	@bash -c 'cd lib; \
+		if [ -e $(SCIPOPTDIR)/lib/libscipopt.so ] ; \
 		then \
-			echo "Creating link: ln -s $$TARGET"; \
-			ln -s $$TARGET libscipopt.so; \
+			ln -s $(SCIPOPTDIR)/lib/libscipopt.so; \
 		else \
-			echo "skipped creation of softlink" ; \
+			echo "ERROR: no SCIP library found in SCIPOPTDIR!" ; \
+			cd ..; \
+			rmdir lib; \
+	        exit 1; \
 		fi ; \
 		cd ..;\
 		'
