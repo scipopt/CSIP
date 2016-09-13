@@ -5,6 +5,10 @@
 #include "scip/pub_var.h"
 #include "scip/scipdefplugins.h"
 
+#define CSIP_MAJOR_VERSION 0
+#define CSIP_MINOR_VERSION 3
+#define CSIP_PATCH_VERSION 1
+
 /* objective type */
 typedef int CSIP_OBJTYPE;
 #define CSIP_OBJTYPE_LINEAR 0
@@ -374,6 +378,28 @@ CSIP_RETCODE reformSenseMinimize(CSIP_MODEL *model)
 /*
  * interface methods
  */
+int CSIPmajorVersion()
+{
+    return CSIP_MAJOR_VERSION;
+}
+
+int CSIPminorVersion()
+{
+    return CSIP_MINOR_VERSION;
+}
+
+int CSIPpatchVersion()
+{
+    return CSIP_PATCH_VERSION;
+}
+
+int CSIPgetVersion()
+{
+    return ( 100*CSIPmajorVersion()
+            + 10*CSIPminorVersion()
+             + 1*CSIPpatchVersion());
+}
+
 CSIP_RETCODE CSIPcreateModel(CSIP_MODEL **modelptr)
 {
     CSIP_MODEL *model;

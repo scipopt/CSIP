@@ -44,6 +44,14 @@ typedef int CSIP_OP;
 #define SUM 64
 #define PROD 65
 
+// versioning scheme: major.minor.patch
+int CSIPmajorVersion();
+int CSIPminorVersion();
+int CSIPpatchVersion();
+
+// combined version
+int CSIPgetVersion();
+
 /* model definition */
 
 // Create a new model (and solver).
