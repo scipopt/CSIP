@@ -29,14 +29,12 @@ and extract the source files, then build the shared library
 
     make SHARED=true GMP=false READLINE=false ZLIB=false scipoptlib
     
-which will produce a file `scipoptlib.so`.
+which will produce a file `libscipopt.so`.
 
-To build CSIP, symbolic links to this shared library and the SCIP
-header files are needed and expected in the `lib/` directory. The link
-`scipoptlib.so` should point to the shared library above. Another link
-`include` should point to the directory that contains `scip/scip.h`,
-e.g., `scipoptsuite-3.2.1/scip-3.2.1/src/`. The `Makefile` will ask
-for these paths interactively if the directory `lib` does not exist.
+To build CSIP, set the environment variable `SCIPOPTDIR` to point to the
+directory that contains the `scipoptsuite` sources. CSIP needs the library in
+`${SCIPOPTDIR}/lib/scipoptlib.so` and the C header files in
+`${SCIPOPTDIR}/scip-*/src/`.
 
 ### CSIP
 
