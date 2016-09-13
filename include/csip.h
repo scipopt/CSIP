@@ -44,6 +44,16 @@ typedef int CSIP_OP;
 #define SUM 64
 #define PROD 65
 
+/* parameter types */
+typedef int CSIP_PARAMTYPE;
+#define CSIP_PARAMTYPE_NOTAPARAM -1
+#define CSIP_PARAMTYPE_BOOL 0
+#define CSIP_PARAMTYPE_INT 1
+#define CSIP_PARAMTYPE_LONGINT 2
+#define CSIP_PARAMTYPE_REAL 3
+#define CSIP_PARAMTYPE_CHAR 4
+#define CSIP_PARAMTYPE_STRING 5
+
 // versioning scheme: major.minor.patch
 int CSIPmajorVersion();
 int CSIPminorVersion();
@@ -181,13 +191,32 @@ double CSIPgetObjBound(CSIP_MODEL *model);
 // Get the solving status.
 CSIP_STATUS CSIPgetStatus(CSIP_MODEL *model);
 
-// Set value for parameter (of any type).
-CSIP_RETCODE CSIPsetParameterGeneric(
-    CSIP_MODEL *model, const char *name, void *value);
+// Get the type of a parameter
+CSIP_PARAMTYPE CSIPgetParamType(CSIP_MODEL *model, const char *name);
 
-// convenience macro to avoid cast to void*
-#define CSIPsetParameter(model, name, value) \
-    CSIPsetParameterGeneric((model), (name), (void*)(value))
+// Set the value of an existing boolean parameter
+CSIP_RETCODE CSIPsetBoolParam(
+    CSIP_MODEL *model, const char *name, int value);
+
+// Set the value of an existing int parameter
+CSIP_RETCODE CSIPsetIntParam(
+    CSIP_MODEL *model, const char *name, int value);
+
+// Set the value of an existing long int parameter
+CSIP_RETCODE CSIPsetLongintParam(
+    CSIP_MODEL *model, const char *name, long long value);
+
+// Set the value of an existing real parameter
+CSIP_RETCODE CSIPsetRealParam(
+    CSIP_MODEL *model, const char *name, double value);
+
+// Set the value of an existing char parameter
+CSIP_RETCODE CSIPsetCharParam(
+    CSIP_MODEL *model, const char *name, char value);
+
+// Set the value of an existing string parameter
+CSIP_RETCODE CSIPsetStringParam(
+    CSIP_MODEL *model, const char *name, const char *value);
 
 // Get the number of variables added to the model.
 int CSIPgetNumVars(CSIP_MODEL *model);

@@ -23,7 +23,7 @@ static void test_lp()
     CSIP_MODEL *m;
 
     CHECK(CSIPcreateModel(&m));
-    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+    CHECK(CSIPsetIntParam(m, "display/verblevel", 2));
 
     int x_idx, y_idx;
     CHECK(CSIPaddVar(m, 0.0, INFINITY, CSIP_VARTYPE_CONTINUOUS, &x_idx));
@@ -69,7 +69,7 @@ static void test_mip()
     CSIP_MODEL *m;
 
     CHECK(CSIPcreateModel(&m));
-    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+    CHECK(CSIPsetIntParam(m, "display/verblevel", 2));
 
     int var_idx;
     for (int i = 0; i < 5; i++)
@@ -116,7 +116,7 @@ static void test_mip2()
     CSIP_MODEL *m;
 
     CHECK(CSIPcreateModel(&m));
-    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+    CHECK(CSIPsetIntParam(m, "display/verblevel", 2));
 
     int x_idx;
     CHECK(CSIPaddVar(m, -INFINITY, INFINITY, CSIP_VARTYPE_INTEGER, &x_idx));
@@ -147,7 +147,7 @@ static void test_mip3()
     CSIP_MODEL *m;
 
     CHECK(CSIPcreateModel(&m));
-    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+    CHECK(CSIPsetIntParam(m, "display/verblevel", 2));
     CHECK(CSIPaddVar(m, -INFINITY, INFINITY, CSIP_VARTYPE_INTEGER, NULL));
     CHECK(CSIPsetObj(m, numindices, indices, objcoef));
 
@@ -183,7 +183,7 @@ static void test_socp()
     CSIP_MODEL *m;
 
     CHECK(CSIPcreateModel(&m));
-    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+    CHECK(CSIPsetIntParam(m, "display/verblevel", 2));
 
     // t
     CHECK(CSIPaddVar(m, 0.0, INFINITY, CSIP_VARTYPE_CONTINUOUS, NULL));
@@ -249,7 +249,7 @@ static void test_nlp()
     double solution[3];
 
     CHECK(CSIPcreateModel(&m));
-    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+    CHECK(CSIPsetIntParam(m, "display/verblevel", 2));
 
     int x_idx, y_idx, z_idx;
     CHECK(CSIPaddVar(m, -INFINITY, 0.0, CSIP_VARTYPE_CONTINUOUS, &x_idx));
@@ -300,7 +300,7 @@ static void test_quadobj()
     CSIP_MODEL *m;
 
     CHECK(CSIPcreateModel(&m));
-    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+    CHECK(CSIPsetIntParam(m, "display/verblevel", 2));
 
     // x
     CHECK(CSIPaddVar(m, -INFINITY, INFINITY, CSIP_VARTYPE_CONTINUOUS, NULL));
@@ -387,7 +387,7 @@ static void test_lazy()
     CSIP_MODEL *m;
 
     CHECK(CSIPcreateModel(&m));
-    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+    CHECK(CSIPsetIntParam(m, "display/verblevel", 2));
 
     // x
     CHECK(CSIPaddVar(m, 0.0, 2.0, CSIP_VARTYPE_INTEGER, NULL));
@@ -460,7 +460,7 @@ static void test_lazy2()
     CSIP_MODEL *m;
 
     CHECK(CSIPcreateModel(&m));
-    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+    CHECK(CSIPsetIntParam(m, "display/verblevel", 2));
 
     // x
     CHECK(CSIPaddVar(m, -INFINITY, 100.5, CSIP_VARTYPE_INTEGER, NULL));
@@ -503,7 +503,7 @@ static void test_lazy_interrupt()
     CSIP_MODEL *m;
 
     CHECK(CSIPcreateModel(&m));
-    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+    CHECK(CSIPsetIntParam(m, "display/verblevel", 2));
     CHECK(CSIPaddVar(m, 1.5, INFINITY, CSIP_VARTYPE_INTEGER, NULL));
 
     CHECK(CSIPaddLazyCallback(m, lazycb_interrupt, NULL));
@@ -527,7 +527,7 @@ static void test_objsense()
     double ub =  4.2;
 
     CHECK(CSIPcreateModel(&m));
-    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+    CHECK(CSIPsetIntParam(m, "display/verblevel", 2));
     CHECK(CSIPaddVar(m, lb, ub, CSIP_VARTYPE_CONTINUOUS, NULL));
     CHECK(CSIPsetObj(m, 1, objindices, objcoef));
 
@@ -564,7 +564,7 @@ static void test_sos1()
     double objcoef[] = {2.0, 3.0, 4.0};
 
     CHECK(CSIPcreateModel(&m));
-    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+    CHECK(CSIPsetIntParam(m, "display/verblevel", 2));
     CHECK(CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL));   // x
     CHECK(CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL));   // y
     CHECK(CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL));   // z
@@ -590,7 +590,7 @@ static void test_sos2()
     double objcoef[] = {2.0, 3.0, 4.0};
 
     CHECK(CSIPcreateModel(&m));
-    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+    CHECK(CSIPsetIntParam(m, "display/verblevel", 2));
     CHECK(CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL));   // x
     CHECK(CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL));   // y
     CHECK(CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL));   // z
@@ -617,7 +617,7 @@ static void test_sos1_sos2()
     double objcoef[] = {2.0, 3.0, 4.0};
 
     CHECK(CSIPcreateModel(&m));
-    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+    CHECK(CSIPsetIntParam(m, "display/verblevel", 2));
     CHECK(CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL));   // x
     CHECK(CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL));   // y
     CHECK(CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL));   // z
@@ -640,7 +640,7 @@ static void test_manythings()
     int n = 9999;
 
     CHECK(CSIPcreateModel(&m));
-    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+    CHECK(CSIPsetIntParam(m, "display/verblevel", 2));
     for (int i = 0; i < n; ++i)
     {
         CHECK(CSIPaddVar(m, 0.0, i, CSIP_VARTYPE_CONTINUOUS, NULL));
@@ -688,7 +688,7 @@ static void test_doublelazy()
     double solution[3];
 
     CHECK(CSIPcreateModel(&m));
-    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+    CHECK(CSIPsetIntParam(m, "display/verblevel", 2));
     CHECK(CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL));   // x
     CHECK(CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL));   // y
     CHECK(CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_CONTINUOUS, NULL));   // z
@@ -741,7 +741,7 @@ static void test_changeprob()
     double solution[3];
 
     CHECK(CSIPcreateModel(&m));
-    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+    CHECK(CSIPsetIntParam(m, "display/verblevel", 2));
 
     // first problem
     CHECK(CSIPaddVar(m, 0.0, 1.0, CSIP_VARTYPE_BINARY, NULL)); // x
@@ -799,7 +799,7 @@ static void test_changequadprob()
     CSIP_MODEL *m;
 
     CHECK(CSIPcreateModel(&m));
-    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+    CHECK(CSIPsetIntParam(m, "display/verblevel", 2));
 
     // x
     CHECK(CSIPaddVar(m, -INFINITY, INFINITY, CSIP_VARTYPE_CONTINUOUS, NULL));
@@ -874,7 +874,7 @@ static void test_changevartype()
     double solution[2];
 
     CHECK(CSIPcreateModel(&m));
-    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
+    CHECK(CSIPsetIntParam(m, "display/verblevel", 2));
 
     // first problem
     CHECK(CSIPaddVar(m, 0.0, 9.0, CSIP_VARTYPE_CONTINUOUS, NULL)); // x
@@ -925,9 +925,9 @@ static void test_initialsol()
     double initialsol[] = {23.0};
 
     CHECK(CSIPcreateModel(&m));
-    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
-    CHECK(CSIPsetParameter(m, "limits/solutions", 1));
-    CHECK(CSIPsetParameter(m, "heuristics/trivial/freq", -1));
+    CHECK(CSIPsetIntParam(m, "display/verblevel", 2));
+    CHECK(CSIPsetIntParam(m, "limits/solutions", 1));
+    CHECK(CSIPsetIntParam(m, "heuristics/trivial/freq", -1));
 
     CHECK(CSIPaddVar(m, 10.0, 100.0, CSIP_VARTYPE_INTEGER, NULL)); // x
     CHECK(CSIPsetObj(m, 1, indices, objcoef));
@@ -971,17 +971,17 @@ static void test_heurcb()
     double solution[2];
 
     CHECK(CSIPcreateModel(&m));
-    CHECK(CSIPsetParameter(m, "display/verblevel", 2));
-    CHECK(CSIPsetParameter(m, "limits/solutions", 1));
-    CHECK(CSIPsetParameter(m, "heuristics/feaspump/freq", -1));
-    CHECK(CSIPsetParameter(m, "heuristics/randrounding/freq", -1));
-    CHECK(CSIPsetParameter(m, "heuristics/rounding/freq", -1));
-    CHECK(CSIPsetParameter(m, "heuristics/shiftandpropagate/freq", -1));
-    CHECK(CSIPsetParameter(m, "heuristics/shifting/freq", -1));
-    CHECK(CSIPsetParameter(m, "heuristics/simplerounding/freq", -1));
-    CHECK(CSIPsetParameter(m, "heuristics/trivial/freq", -1));
-    CHECK(CSIPsetParameter(m, "presolving/maxrounds", 0));
-    CHECK(CSIPsetParameter(m, "separating/maxroundsroot", 0));
+    CHECK(CSIPsetIntParam(m, "display/verblevel", 2));
+    CHECK(CSIPsetIntParam(m, "limits/solutions", 1));
+    CHECK(CSIPsetIntParam(m, "heuristics/feaspump/freq", -1));
+    CHECK(CSIPsetIntParam(m, "heuristics/randrounding/freq", -1));
+    CHECK(CSIPsetIntParam(m, "heuristics/rounding/freq", -1));
+    CHECK(CSIPsetIntParam(m, "heuristics/shiftandpropagate/freq", -1));
+    CHECK(CSIPsetIntParam(m, "heuristics/shifting/freq", -1));
+    CHECK(CSIPsetIntParam(m, "heuristics/simplerounding/freq", -1));
+    CHECK(CSIPsetIntParam(m, "heuristics/trivial/freq", -1));
+    CHECK(CSIPsetIntParam(m, "presolving/maxrounds", 0));
+    CHECK(CSIPsetIntParam(m, "separating/maxroundsroot", 0));
 
     CHECK(CSIPaddVar(m, 0.0, 3.0, CSIP_VARTYPE_INTEGER, NULL)); // x
     CHECK(CSIPaddVar(m, 0.0, 3.0, CSIP_VARTYPE_INTEGER, NULL)); // y
@@ -998,6 +998,19 @@ static void test_heurcb()
     CHECK(CSIPgetVarValues(m, solution));
     mu_assert_near("Wrong solution!", solution[0], 2.0);
     mu_assert_near("Wrong solution!", solution[1], 2.0);
+
+    CHECK(CSIPfreeModel(m));
+}
+
+
+static void test_params()
+{
+    CSIP_MODEL *m;
+
+    CHECK(CSIPcreateModel(&m));
+    CHECK(CSIPsetIntParam(m, "display/verblevel", 2));
+    mu_assert_int("Wrong param type!", CSIPgetParamType(m, "display/verblevel"), CSIP_PARAMTYPE_INT);
+    mu_assert_int("Wrong param type!", CSIPgetParamType(m, "what am I?"), CSIP_PARAMTYPE_NOTAPARAM);
 
     CHECK(CSIPfreeModel(m));
 }
@@ -1027,6 +1040,7 @@ int main(int argc, char **argv)
     mu_run_test(test_changevartype);
     mu_run_test(test_initialsol);
     mu_run_test(test_heurcb);
+    mu_run_test(test_params);
 
     printf("All tests passed!\n");
     return 0;

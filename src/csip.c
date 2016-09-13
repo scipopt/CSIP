@@ -442,7 +442,7 @@ CSIP_RETCODE CSIPcreateModel(CSIP_MODEL **modelptr)
     model->objcons = NULL;
     model->objtype = CSIP_OBJTYPE_LINEAR;
 
-    CSIP_CALL(CSIPsetParameter(model, "display/width", 80));
+    CSIP_CALL(CSIPsetIntParam(model, "display/width", 80));
 
     return CSIP_RETCODE_OK;
 }
@@ -1020,10 +1020,57 @@ CSIP_RETCODE CSIPgetVarValues(CSIP_MODEL *model, double *output)
     return CSIP_RETCODE_OK;
 }
 
-CSIP_RETCODE CSIPsetParameterGeneric(
-    CSIP_MODEL *model, const char *name, void *value)
+// Get the type of a parameter
+CSIP_PARAMTYPE CSIPgetParamType(CSIP_MODEL *model, const char *name)
 {
-    SCIP_in_CSIP(SCIPsetParam(model->scip, name, value));
+   SCIP_PARAM* param;
+
+   param = SCIPgetParam(model->scip, name);
+   if( param == NULL )
+      return CSIP_PARAMTYPE_NOTAPARAM;
+   else
+      return SCIPparamGetType(param);
+}
+
+CSIP_RETCODE CSIPsetBoolParam(
+    CSIP_MODEL *model, const char *name, int value)
+{
+    SCIP_in_CSIP(SCIPsetBoolParam(model->scip, name, value));
+    return CSIP_RETCODE_OK;
+}
+
+CSIP_RETCODE CSIPsetIntParam(
+    CSIP_MODEL *model, const char *name, int value)
+{
+    SCIP_in_CSIP(SCIPsetIntParam(model->scip, name, value));
+    return CSIP_RETCODE_OK;
+}
+
+CSIP_RETCODE CSIPsetLongintParam(
+    CSIP_MODEL *model, const char *name, long long value)
+{
+    SCIP_in_CSIP(SCIPsetLongintParam(model->scip, name, value));
+    return CSIP_RETCODE_OK;
+}
+
+CSIP_RETCODE CSIPsetRealParam(
+    CSIP_MODEL *model, const char *name, double value)
+{
+    SCIP_in_CSIP(SCIPsetRealParam(model->scip, name, value));
+    return CSIP_RETCODE_OK;
+}
+
+CSIP_RETCODE CSIPsetCharParam(
+    CSIP_MODEL *model, const char *name, char value)
+{
+    SCIP_in_CSIP(SCIPsetCharParam(model->scip, name, value));
+    return CSIP_RETCODE_OK;
+}
+
+CSIP_RETCODE CSIPsetStringParam(
+    CSIP_MODEL *model, const char *name, const char *value)
+{
+    SCIP_in_CSIP(SCIPsetStringParam(model->scip, name, value));
     return CSIP_RETCODE_OK;
 }
 
