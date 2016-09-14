@@ -82,17 +82,8 @@ struct csip_model
     int nlazycb;
     int nheur;
 
-    // store the user-defined optimization sense, because SCIP always minimizes
-    SCIP_OBJSENSE sense;
-
     // user-defined solution, is checked before solving
     SCIP_SOL *initialsol;
-
-    // store the optimization status (for after freeTransform)
-    CSIP_STATUS status;
-
-    // store the best bound (for after freeTransform)
-    double objbound;
 
     // store objective variable for nonlinear objective: the idea is to add an
     // auxiliary constraint and variable to represent nonlinear objectives. If
@@ -107,47 +98,6 @@ struct csip_model
 /*
  * local methods
  */
-
-static
-CSIP_STATUS getStatus(CSIP_MODEL *model)
-{
-    SCIP_STATUS status = SCIPgetStatus(model->scip);
-    switch (status)
-    {
-    case SCIP_STATUS_UNKNOWN:
-        return CSIP_STATUS_UNKNOWN;
-    case SCIP_STATUS_USERINTERRUPT:
-        return CSIP_STATUS_USERLIMIT;
-    case SCIP_STATUS_NODELIMIT:
-        return CSIP_STATUS_NODELIMIT;
-    case SCIP_STATUS_TOTALNODELIMIT:
-        return CSIP_STATUS_NODELIMIT;
-    case SCIP_STATUS_STALLNODELIMIT:
-        return CSIP_STATUS_USERLIMIT;
-    case SCIP_STATUS_TIMELIMIT:
-        return CSIP_STATUS_TIMELIMIT;
-    case SCIP_STATUS_MEMLIMIT:
-        return CSIP_STATUS_MEMLIMIT;
-    case SCIP_STATUS_GAPLIMIT:
-        return CSIP_STATUS_USERLIMIT;
-    case SCIP_STATUS_SOLLIMIT:
-        return CSIP_STATUS_USERLIMIT;
-    case SCIP_STATUS_BESTSOLLIMIT:
-        return CSIP_STATUS_USERLIMIT;
-    case SCIP_STATUS_RESTARTLIMIT:
-        return CSIP_STATUS_USERLIMIT;
-    case SCIP_STATUS_OPTIMAL:
-        return CSIP_STATUS_OPTIMAL;
-    case SCIP_STATUS_INFEASIBLE:
-        return CSIP_STATUS_INFEASIBLE;
-    case SCIP_STATUS_UNBOUNDED:
-        return CSIP_STATUS_UNBOUNDED;
-    case SCIP_STATUS_INFORUNBD:
-        return CSIP_STATUS_INFORUNBD;
-    default:
-        return CSIP_STATUS_UNKNOWN;
-    }
-}
 
 static
 CSIP_RETCODE createLinCons(CSIP_MODEL *model, int numindices, int *indices,
@@ -336,42 +286,43 @@ CSIP_RETCODE createExprtree(
     return CSIP_RETCODE_OK;
 }
 
-CSIP_RETCODE reformSenseMinimize(CSIP_MODEL *model)
+/** When the objective is nonlinear we use the epigraph representation.
+ * However, changing the objective sense is not  straightforward in that
+ * case. The purpose of this function is to change an epigraph objective
+ * to the represent the correct objective sense. *Starting* from a correct
+ * objective, we only need two modifications to correctly change the sense.
+ * 0) change sense (this step is not done here)
+ * 1) multiply objective function by -1
+ * 2) multiply nonlinear function by -1
+ * max{ t : f(x) >= t } --> min{ -t : -f(x) >= t }
+ * min{ t : f(x) <= t } --> max{ -t : -f(x) <= t }
+ */
+CSIP_RETCODE correctObjectiveFunction(CSIP_MODEL *model)
 {
-    if (model->sense == SCIP_OBJSENSE_MAXIMIZE)
-    {
-        // negate all objective coefficients
-        for (int i = 0; i < model->nvars; ++i)
-        {
-            SCIP_VAR *var = model->vars[i];
-            double coef = SCIPvarGetObj(var);
-            SCIP_in_CSIP(SCIPchgVarObj(model->scip, var, -1.0 * coef));
-        }
+    SCIP* scip = model->scip;
+    SCIP_CONS* objcons = model->objcons;
+    SCIP_VAR* objvar = model->objvar;
 
-        if (model->objvar != NULL)
-        {
-            // the first time we are here the problem is: max t s.t objcons - t <= 0
-            // but it should be max t s.t. objcons >= t, or equivalently
-            // min t s.t -t - objcons <= 0
-            // the second time we are called, we have to set it back as before (TODO: is this really necessary?)
-            if (model->objtype == CSIP_OBJTYPE_NONLINEAR)
-            {
-                SCIP_EXPRTREE *exprtree;
-                SCIP_Real exprtreecoef;
+    // we only apply this for nonlinear objectives
+    if( objvar == NULL )
+       return CSIP_RETCODE_OK;
 
-                // we need to copy the tree, because SCIPsetExprtreesNonlinear
-                // is going to delete it
-                SCIP_in_CSIP(SCIPexprtreeCopy(SCIPblkmem(model->scip),
-                                              &exprtree,
-                                              SCIPgetExprtreesNonlinear(model->scip, model->objcons)[0]
-                                             ));
-                exprtreecoef = -SCIPgetExprtreeCoefsNonlinear(model->scip, model->objcons)[0];
+    assert(objcons != NULL);
 
-                SCIP_in_CSIP(SCIPsetExprtreesNonlinear(model->scip,
-                                                       model->objcons, 1, &exprtree, &exprtreecoef));
-            }
-        }
-    }
+    // 1)
+    SCIP_in_CSIP(SCIPchgVarObj(scip, objvar, -1.0 * SCIPvarGetObj(objvar)));
+
+    // 2)
+    // we need to copy the tree, because SCIPsetExprtreesNonlinear
+    // is going to delete it
+    SCIP_EXPRTREE *exprtree;
+    SCIP_in_CSIP(SCIPexprtreeCopy(SCIPblkmem(scip), &exprtree,
+             SCIPgetExprtreesNonlinear(scip, objcons)[0]));
+    SCIP_Real exprtreecoef = -SCIPgetExprtreeCoefsNonlinear(scip, objcons)[0];
+
+    SCIP_in_CSIP(SCIPsetExprtreesNonlinear(scip, objcons, 1, &exprtree,
+             &exprtreecoef));
+
     return CSIP_RETCODE_OK;
 }
 
@@ -434,10 +385,7 @@ CSIP_RETCODE CSIPcreateModel(CSIP_MODEL **modelptr)
 
     model->nlazycb = 0;
     model->nheur = 0;
-    model->sense = SCIP_OBJSENSE_MINIMIZE;
     model->initialsol = NULL;
-    model->status = CSIP_STATUS_UNKNOWN;
-    model->objbound = strtod("NaN", NULL);
     model->objvar = NULL;
     model->objcons = NULL;
     model->objtype = CSIP_OBJTYPE_LINEAR;
@@ -494,6 +442,7 @@ CSIP_RETCODE CSIPaddVar(CSIP_MODEL *model, double lowerbound, double upperbound,
     SCIP_VAR *var;
 
     scip = model->scip;
+    SCIP_in_CSIP(SCIPfreeTransform(scip));
 
     SCIP_in_CSIP(SCIPcreateVarBasic(scip, &var, NULL, lowerbound, upperbound, 0.0,
                                     vartype));
@@ -533,6 +482,7 @@ CSIP_RETCODE CSIPchgVarLB(CSIP_MODEL *model, int numindices, int *indices,
     SCIP_VAR *var;
 
     scip = model->scip;
+    SCIP_in_CSIP(SCIPfreeTransform(scip));
 
     for (i = 0; i < numindices; ++i)
     {
@@ -551,6 +501,7 @@ CSIP_RETCODE CSIPchgVarUB(CSIP_MODEL *model, int numindices, int *indices,
     SCIP_VAR *var;
 
     scip = model->scip;
+    SCIP_in_CSIP(SCIPfreeTransform(scip));
 
     for (i = 0; i < numindices; ++i)
     {
@@ -567,6 +518,8 @@ CSIP_RETCODE CSIPchgVarType(
     SCIP *scip = model->scip;
     SCIP_VAR *var = model->vars[varindex];
     SCIP_Bool infeas = FALSE;
+
+    SCIP_in_CSIP(SCIPfreeTransform(scip));
 
     SCIP_in_CSIP(SCIPchgVarType(scip, var, vartype, &infeas));
     // TODO: don't ignore `infeas`?
@@ -608,6 +561,8 @@ CSIP_RETCODE CSIPaddLinCons(CSIP_MODEL *model, int numindices, int *indices,
 {
     SCIP_CONS *cons;
 
+    SCIP_in_CSIP(SCIPfreeTransform(model->scip));
+
     CSIP_CALL(createLinCons(model, numindices, indices, coefs, lhs, rhs, &cons));
     CSIP_CALL(addCons(model, cons, idx));
 
@@ -628,6 +583,7 @@ CSIP_RETCODE CSIPaddQuadCons(CSIP_MODEL *model, int numlinindices,
     SCIP_CONS *cons;
 
     scip = model->scip;
+    SCIP_in_CSIP(SCIPfreeTransform(scip));
 
     SCIP_in_CSIP(SCIPcreateConsBasicQuadratic(scip, &cons, "quadcons", 0, NULL,
                  NULL, 0, NULL, NULL, NULL, lhs, rhs));
@@ -666,6 +622,7 @@ CSIP_RETCODE CSIPaddNonLinCons(
                              values, &tree));
 
     scip = model->scip;
+    SCIP_in_CSIP(SCIPfreeTransform(scip));
 
     // create nonlinear constraint
     SCIP_in_CSIP(SCIPcreateConsBasicNonlinear(scip, &cons, "nonlin", 0, NULL, NULL,
@@ -685,6 +642,9 @@ CSIP_RETCODE CSIPaddSOS1(
     SCIP *scip = model->scip;
     SCIP_CONS *cons;
     SCIP_VAR **vars = (SCIP_VAR **) malloc(numindices * sizeof(SCIP_VAR *));
+
+    SCIP_in_CSIP(SCIPfreeTransform(scip));
+
     if (vars == NULL)
     {
         return CSIP_RETCODE_NOMEMORY;
@@ -709,6 +669,9 @@ CSIP_RETCODE CSIPaddSOS2(
     SCIP *scip = model->scip;
     SCIP_CONS *cons;
     SCIP_VAR **vars = (SCIP_VAR **) malloc(numindices * sizeof(SCIP_VAR *));
+
+    SCIP_in_CSIP(SCIPfreeTransform(scip));
+
     if (vars == NULL)
     {
         return CSIP_RETCODE_NOMEMORY;
@@ -735,6 +698,7 @@ CSIP_RETCODE CSIPsetObj(CSIP_MODEL *model, int numindices, int *indices,
     SCIP_VAR *var;
 
     scip = model->scip;
+    SCIP_in_CSIP(SCIPfreeTransform(scip));
 
     for (i = 0; i < numindices; ++i)
     {
@@ -893,6 +857,7 @@ CSIP_RETCODE CSIPsetNonlinearObj(
                              values, &tree));
 
     scip = model->scip;
+    SCIP_in_CSIP(SCIPfreeTransform(scip));
 
     // create nonlinear objective constraint
     SCIP_in_CSIP(SCIPcreateConsBasicNonlinear(scip, &cons,
@@ -924,6 +889,13 @@ CSIP_RETCODE CSIPsetNonlinearObj(
     model->objcons = cons;
     model->objtype = CSIP_OBJTYPE_NONLINEAR;
 
+    // the created constraint is correct if sense is minimize, otherwise we
+    // have to correct it
+    if( SCIPgetObjsense(model->scip) == SCIP_OBJSENSE_MAXIMIZE )
+    {
+        CSIP_CALL(correctObjectiveFunction(model));
+    }
+
     // free memory
     SCIP_in_CSIP(SCIPexprtreeFree(&tree));
 
@@ -932,22 +904,32 @@ CSIP_RETCODE CSIPsetNonlinearObj(
 
 CSIP_RETCODE CSIPsetSenseMinimize(CSIP_MODEL *model)
 {
-    model->sense = SCIP_OBJSENSE_MINIMIZE;
+    SCIP_in_CSIP(SCIPfreeTransform(model->scip));
+
+    if( SCIPgetObjsense(model->scip) != SCIP_OBJSENSE_MINIMIZE )
+    {
+        SCIP_in_CSIP(SCIPsetObjsense(model->scip, SCIP_OBJSENSE_MINIMIZE));
+        CSIP_CALL(correctObjectiveFunction(model));
+    }
+
     return CSIP_RETCODE_OK;
 }
 
 CSIP_RETCODE CSIPsetSenseMaximize(CSIP_MODEL *model)
 {
-    model->sense = SCIP_OBJSENSE_MAXIMIZE;
+    SCIP_in_CSIP(SCIPfreeTransform(model->scip));
+
+    if( SCIPgetObjsense(model->scip) != SCIP_OBJSENSE_MAXIMIZE )
+    {
+        SCIP_in_CSIP(SCIPsetObjsense(model->scip, SCIP_OBJSENSE_MAXIMIZE));
+        CSIP_CALL(correctObjectiveFunction(model));
+    }
+
     return CSIP_RETCODE_OK;
 }
 
 CSIP_RETCODE CSIPsolve(CSIP_MODEL *model)
 {
-    // always pose the problem as a minimization, because otherwise the order of
-    // the stored solutions will be messed up after the freeTransform :-(
-    CSIP_CALL(reformSenseMinimize(model));
-
     // add initial solution
     if (model->initialsol != NULL)
     {
@@ -956,15 +938,6 @@ CSIP_RETCODE CSIPsolve(CSIP_MODEL *model)
     }
 
     SCIP_in_CSIP(SCIPsolve(model->scip));
-    model->status = getStatus(model);
-
-    double dual = SCIPgetDualbound(model->scip);
-    model->objbound = (model->sense == SCIP_OBJSENSE_MINIMIZE ? dual : -dual);
-
-    SCIP_in_CSIP(SCIPfreeTransform(model->scip));
-
-    // reset the objective (might be negated)
-    CSIP_CALL(reformSenseMinimize(model));
 
     return CSIP_RETCODE_OK;
 }
@@ -977,7 +950,41 @@ CSIP_RETCODE CSIPinterrupt(CSIP_MODEL *model)
 
 CSIP_STATUS CSIPgetStatus(CSIP_MODEL *model)
 {
-    return model->status;
+    switch (SCIPgetStatus(model->scip))
+    {
+    case SCIP_STATUS_UNKNOWN:
+        return CSIP_STATUS_UNKNOWN;
+    case SCIP_STATUS_USERINTERRUPT:
+        return CSIP_STATUS_USERLIMIT;
+    case SCIP_STATUS_NODELIMIT:
+        return CSIP_STATUS_NODELIMIT;
+    case SCIP_STATUS_TOTALNODELIMIT:
+        return CSIP_STATUS_NODELIMIT;
+    case SCIP_STATUS_STALLNODELIMIT:
+        return CSIP_STATUS_USERLIMIT;
+    case SCIP_STATUS_TIMELIMIT:
+        return CSIP_STATUS_TIMELIMIT;
+    case SCIP_STATUS_MEMLIMIT:
+        return CSIP_STATUS_MEMLIMIT;
+    case SCIP_STATUS_GAPLIMIT:
+        return CSIP_STATUS_USERLIMIT;
+    case SCIP_STATUS_SOLLIMIT:
+        return CSIP_STATUS_USERLIMIT;
+    case SCIP_STATUS_BESTSOLLIMIT:
+        return CSIP_STATUS_USERLIMIT;
+    case SCIP_STATUS_RESTARTLIMIT:
+        return CSIP_STATUS_USERLIMIT;
+    case SCIP_STATUS_OPTIMAL:
+        return CSIP_STATUS_OPTIMAL;
+    case SCIP_STATUS_INFEASIBLE:
+        return CSIP_STATUS_INFEASIBLE;
+    case SCIP_STATUS_UNBOUNDED:
+        return CSIP_STATUS_UNBOUNDED;
+    case SCIP_STATUS_INFORUNBD:
+        return CSIP_STATUS_INFORUNBD;
+    default:
+        return CSIP_STATUS_UNKNOWN;
+    }
 }
 
 double CSIPgetObjValue(CSIP_MODEL *model)
@@ -988,13 +995,12 @@ double CSIPgetObjValue(CSIP_MODEL *model)
         return CSIP_RETCODE_ERROR;
     }
 
-    double objval = SCIPgetSolOrigObj(model->scip, sol);
-    return model->sense == SCIP_OBJSENSE_MINIMIZE ? objval : -objval;
+    return SCIPgetSolOrigObj(model->scip, sol);
 }
 
 double CSIPgetObjBound(CSIP_MODEL *model)
 {
-    return model->objbound;
+    return SCIPgetDualbound(model->scip);
 }
 
 
