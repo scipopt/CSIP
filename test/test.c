@@ -1009,8 +1009,10 @@ static void test_params()
 
     CHECK(CSIPcreateModel(&m));
     CHECK(CSIPsetIntParam(m, "display/verblevel", 2));
-    mu_assert_int("Wrong param type!", CSIPgetParamType(m, "display/verblevel"), CSIP_PARAMTYPE_INT);
-    mu_assert_int("Wrong param type!", CSIPgetParamType(m, "what am I?"), CSIP_PARAMTYPE_NOTAPARAM);
+    mu_assert_int("Wrong param type!", CSIPgetParamType(m, "display/verblevel"),
+                  CSIP_PARAMTYPE_INT);
+    mu_assert_int("Wrong param type!", CSIPgetParamType(m, "what am I?"),
+                  CSIP_PARAMTYPE_NOTAPARAM);
 
     CHECK(CSIPfreeModel(m));
 }

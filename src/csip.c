@@ -395,9 +395,9 @@ int CSIPpatchVersion()
 
 int CSIPgetVersion()
 {
-    return ( 100*CSIPmajorVersion()
-            + 10*CSIPminorVersion()
-             + 1*CSIPpatchVersion());
+    return (100 * CSIPmajorVersion()
+            + 10 * CSIPminorVersion()
+            + 1 * CSIPpatchVersion());
 }
 
 CSIP_RETCODE CSIPcreateModel(CSIP_MODEL **modelptr)
@@ -1023,13 +1023,17 @@ CSIP_RETCODE CSIPgetVarValues(CSIP_MODEL *model, double *output)
 // Get the type of a parameter
 CSIP_PARAMTYPE CSIPgetParamType(CSIP_MODEL *model, const char *name)
 {
-   SCIP_PARAM* param;
+    SCIP_PARAM *param;
 
-   param = SCIPgetParam(model->scip, name);
-   if( param == NULL )
-      return CSIP_PARAMTYPE_NOTAPARAM;
-   else
-      return SCIPparamGetType(param);
+    param = SCIPgetParam(model->scip, name);
+    if (param == NULL)
+    {
+        return CSIP_PARAMTYPE_NOTAPARAM;
+    }
+    else
+    {
+        return SCIPparamGetType(param);
+    }
 }
 
 CSIP_RETCODE CSIPsetBoolParam(
