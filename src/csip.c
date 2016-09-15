@@ -299,13 +299,15 @@ CSIP_RETCODE createExprtree(
  */
 CSIP_RETCODE correctObjectiveFunction(CSIP_MODEL *model)
 {
-    SCIP* scip = model->scip;
-    SCIP_CONS* objcons = model->objcons;
-    SCIP_VAR* objvar = model->objvar;
+    SCIP *scip = model->scip;
+    SCIP_CONS *objcons = model->objcons;
+    SCIP_VAR *objvar = model->objvar;
 
     // we only apply this for nonlinear objectives
-    if( objvar == NULL )
-       return CSIP_RETCODE_OK;
+    if (objvar == NULL)
+    {
+        return CSIP_RETCODE_OK;
+    }
 
     assert(objcons != NULL);
 
@@ -317,11 +319,11 @@ CSIP_RETCODE correctObjectiveFunction(CSIP_MODEL *model)
     // is going to delete it
     SCIP_EXPRTREE *exprtree;
     SCIP_in_CSIP(SCIPexprtreeCopy(SCIPblkmem(scip), &exprtree,
-             SCIPgetExprtreesNonlinear(scip, objcons)[0]));
+                                  SCIPgetExprtreesNonlinear(scip, objcons)[0]));
     SCIP_Real exprtreecoef = -SCIPgetExprtreeCoefsNonlinear(scip, objcons)[0];
 
     SCIP_in_CSIP(SCIPsetExprtreesNonlinear(scip, objcons, 1, &exprtree,
-             &exprtreecoef));
+                                           &exprtreecoef));
 
     return CSIP_RETCODE_OK;
 }
@@ -891,7 +893,7 @@ CSIP_RETCODE CSIPsetNonlinearObj(
 
     // the created constraint is correct if sense is minimize, otherwise we
     // have to correct it
-    if( SCIPgetObjsense(model->scip) == SCIP_OBJSENSE_MAXIMIZE )
+    if (SCIPgetObjsense(model->scip) == SCIP_OBJSENSE_MAXIMIZE)
     {
         CSIP_CALL(correctObjectiveFunction(model));
     }
@@ -906,7 +908,7 @@ CSIP_RETCODE CSIPsetSenseMinimize(CSIP_MODEL *model)
 {
     SCIP_in_CSIP(SCIPfreeTransform(model->scip));
 
-    if( SCIPgetObjsense(model->scip) != SCIP_OBJSENSE_MINIMIZE )
+    if (SCIPgetObjsense(model->scip) != SCIP_OBJSENSE_MINIMIZE)
     {
         SCIP_in_CSIP(SCIPsetObjsense(model->scip, SCIP_OBJSENSE_MINIMIZE));
         CSIP_CALL(correctObjectiveFunction(model));
@@ -919,7 +921,7 @@ CSIP_RETCODE CSIPsetSenseMaximize(CSIP_MODEL *model)
 {
     SCIP_in_CSIP(SCIPfreeTransform(model->scip));
 
-    if( SCIPgetObjsense(model->scip) != SCIP_OBJSENSE_MAXIMIZE )
+    if (SCIPgetObjsense(model->scip) != SCIP_OBJSENSE_MAXIMIZE)
     {
         SCIP_in_CSIP(SCIPsetObjsense(model->scip, SCIP_OBJSENSE_MAXIMIZE));
         CSIP_CALL(correctObjectiveFunction(model));
