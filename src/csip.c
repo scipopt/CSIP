@@ -1380,13 +1380,20 @@ CSIP_RETCODE CSIPlazyAddLinCons(CSIP_LAZYDATA *lazydata, int numindices,
         lazydata->feasible = FALSE;
     }
 
-    if (!lazydata->checkonly)
+    /* can not add constraints here */
+    if (SCIPgetStage(scip) == SCIP_STAGE_INIT
+            || SCIPgetStage(scip) == SCIP_STAGE_TRANSFORMING
+            || SCIPgetStage(scip) == SCIP_STAGE_INITSOLVE)
     {
-        /* we do not store cons, because the original problem does not contain them;
-         * and there is an issue when freeTransform is called
-         */
-        SCIP_in_CSIP(SCIPaddCons(scip, cons));
+        assert(lazydata->checkonly);
+        SCIP_in_CSIP(SCIPreleaseCons(lazydata->model->scip, &cons));
+        return CSIP_RETCODE_OK;
     }
+
+    /* we do not store cons, because the original problem does not contain them;
+     * and there is an issue when freeTransform is called
+     */
+    SCIP_in_CSIP(SCIPaddCons(scip, cons));
     SCIP_in_CSIP(SCIPreleaseCons(lazydata->model->scip, &cons));
 
     return CSIP_RETCODE_OK;
