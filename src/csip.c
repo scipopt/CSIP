@@ -1233,13 +1233,21 @@ CSIP_RETCODE CSIPaddLazyCallback(CSIP_MODEL *model, CSIP_LAZYCALLBACK callback,
     SCIP_CONSHDLRDATA *conshdlrdata;
     SCIP_CONSHDLR *conshdlr;
     SCIP *scip;
-    int priority;
     char name[SCIP_MAXSTRLEN];
+    int enfopriority;
+    int checkpriority;
+    int eagerfreq;
+    SCIP_Bool needscons = FALSE;
 
     scip = model->scip;
 
-    /* cons_integral has priority 0 and we want to be checked before */
-    priority = 1;
+    /* cons_integral has enfo priority 0 and we want to be checked before */
+    enfopriority = 1;
+    /* we want to be checked as rarely as possible.
+     * -5000000 is the smallest proper value in SCIP's conshdlrs. */
+    checkpriority = -5000000 - 1;
+    /* no eager evaluations?! */
+    eagerfreq = -1;
 
     SCIP_in_CSIP(SCIPallocMemory(scip, &conshdlrdata));
 
@@ -1250,7 +1258,7 @@ CSIP_RETCODE CSIPaddLazyCallback(CSIP_MODEL *model, CSIP_LAZYCALLBACK callback,
     SCIPsnprintf(name, SCIP_MAXSTRLEN, "lazycons_%d", model->nlazycb);
     SCIP_in_CSIP(SCIPincludeConshdlrBasic(
                      scip, &conshdlr, name, "lazy constraint callback",
-                     priority, -1, -1, FALSE,
+                     enfopriority, checkpriority, eagerfreq, needscons,
                      consEnfolpLazy, consEnfopsLazy, consCheckLazy, consLockLazy,
                      conshdlrdata));
 
@@ -1372,13 +1380,20 @@ CSIP_RETCODE CSIPlazyAddLinCons(CSIP_LAZYDATA *lazydata, int numindices,
         lazydata->feasible = FALSE;
     }
 
-    if (!lazydata->checkonly)
+    /* can not add constraints here */
+    if (SCIPgetStage(scip) == SCIP_STAGE_INIT
+            || SCIPgetStage(scip) == SCIP_STAGE_TRANSFORMING
+            || SCIPgetStage(scip) == SCIP_STAGE_INITSOLVE)
     {
-        /* we do not store cons, because the original problem does not contain them;
-         * and there is an issue when freeTransform is called
-         */
-        SCIP_in_CSIP(SCIPaddCons(scip, cons));
+        assert(lazydata->checkonly);
+        SCIP_in_CSIP(SCIPreleaseCons(lazydata->model->scip, &cons));
+        return CSIP_RETCODE_OK;
     }
+
+    /* we do not store cons, because the original problem does not contain them;
+     * and there is an issue when freeTransform is called
+     */
+    SCIP_in_CSIP(SCIPaddCons(scip, cons));
     SCIP_in_CSIP(SCIPreleaseCons(lazydata->model->scip, &cons));
 
     return CSIP_RETCODE_OK;
