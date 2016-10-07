@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/leethargo/CSIP](https://badges.gitter.im/leethargo/CSIP.svg)](https://gitter.im/leethargo/CSIP?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-An optionated interface to the [SCIP](http://scip.zib.de/) solver in
+An opinionated interface to the [SCIP](http://scip.zib.de/) solver in
 the C language. A restricted subset of the features is chosen, with
 the goal of making SCIP more accessible to novice users and other
 programming languages.
