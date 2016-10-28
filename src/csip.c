@@ -1372,6 +1372,13 @@ CSIP_RETCODE CSIPlazyAddLinCons(CSIP_LAZYDATA *lazydata, int numindices,
         return CSIP_RETCODE_OK;
     }
 
+    if (SCIPgetStage(scip) == SCIP_STAGE_TRANSFORMED)
+    {
+        // we can't even create a cons in this stage, we trust the user's judgement
+        lazydata->feasible = FALSE;
+        return CSIP_RETCODE_OK;
+    }
+
     CSIP_CALL(createLinCons(lazydata->model, numindices, indices, coefs, lhs, rhs,
                             &cons));
     SCIP_in_CSIP(SCIPsetConsLocal(scip, cons, islocal == 1));
