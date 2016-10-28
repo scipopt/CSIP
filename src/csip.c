@@ -49,7 +49,9 @@ static inline int retCodeCSIPtoSCIP(int csipRetCode)
         CSIP_RETCODE _retcode = (x);                                       \
         if(_retcode != CSIP_RETCODE_OK)                                    \
         {                                                                  \
-            printf("Failing with retcode %d at %d\n", _retcode, __LINE__); \
+            printf("CSIP: failing with retcode %d at %s:%d\n",             \
+                   _retcode, __FILE__, __LINE__);                          \
+            exit(1);                                                       \
             return _retcode;                                               \
         }                                                                  \
     } while(0)
