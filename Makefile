@@ -53,6 +53,11 @@ clean:
 	@rm -f $(CSIPLIB)
 	@rm -f $(TESTBIN)
 
+.PHONY: clean-links
+clean-links: 
+	@echo "removing symlinks"
+	@rm -rf $(CSIPLIBDIR)
+
 .PHONY: test
 test: 
 	@make $(TESTBIN)
