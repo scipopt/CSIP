@@ -6,8 +6,8 @@
 #include "scip/scipdefplugins.h"
 
 #define CSIP_MAJOR_VERSION 0
-#define CSIP_MINOR_VERSION 3
-#define CSIP_PATCH_VERSION 6
+#define CSIP_MINOR_VERSION 4
+#define CSIP_PATCH_VERSION 0
 
 /* objective type */
 typedef int CSIP_OBJTYPE;
@@ -1473,7 +1473,7 @@ CSIP_RETCODE CSIPheurAddSolution(CSIP_HEURDATA *heurdata, double *values)
 
     SCIP_in_CSIP(SCIPcreateSol(scip, &sol, heurdata->heur));
     SCIP_in_CSIP(SCIPsetSolVals(scip, sol, model->nvars, model->vars, values));
-    SCIP_in_CSIP(SCIPtrySolFree(scip, &sol, FALSE, TRUE, TRUE, TRUE, &stored));
+    SCIP_in_CSIP(SCIPtrySolFree(scip, &sol, FALSE, FALSE, TRUE, TRUE, TRUE, &stored));
 
     if (stored > 0)
     {
