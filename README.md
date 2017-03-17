@@ -20,10 +20,11 @@ single callback function.
 
 ### SCIP and SoPlex
 
-CSIP depends on the
-[SCIP Optimization Suite](http://scip.zib.de/#scipoptsuite).
+CSIP depends on the [SCIP Optimization Suite](http://scip.zib.de/#scipoptsuite).
+Starting with release 0.4.0, **CSIP only supports SCIP Optimization Suite
+4.0.0** or newer.
 
-[Download](http://scip.zib.de/download.php?fname=scipoptsuite-3.2.1.tgz)
+[Download](http://scip.zib.de/download.php?fname=scipoptsuite-4.0.0.tgz)
 and extract the source files, then build the shared library
 (containing SCIP and SoPlex) with
 
