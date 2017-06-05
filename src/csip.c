@@ -291,7 +291,7 @@ CSIP_RETCODE createExprtree(
 /** When the objective is nonlinear we use the epigraph representation.
  * However, changing the objective sense is not  straightforward in that
  * case. The purpose of this function is to change an epigraph objective
- * to the represent the correct objective sense. *Starting* from a correct
+ * to represent the correct objective sense. *Starting* from a correct
  * objective, we only need two modifications to correctly change the sense.
  * 0) change sense (this step is not done here)
  * 1) multiply objective function by -1
@@ -938,6 +938,36 @@ CSIP_RETCODE CSIPsolve(CSIP_MODEL *model)
     if (model->initialsol != NULL)
     {
         unsigned int stored;
+
+        /* if objective is nonlinear, we need to extend the initial sol with
+         * the value of objvar. For this we need to change the objective
+         * constraint temporarily to an equality constraint. However the
+         * nonlinear contraint handler doesn't allow to change sides, so
+         * we have to create a brand new constraint to compute the violation
+         */
+        if (model->objcons != NULL)
+        {
+            SCIP_CONS* tempcons;
+            SCIP_Real objvarval;
+            SCIP_EXPRTREE *tree;
+
+            /* we do not care about the sign of the expression tree, since
+             * tempcons is equality and this already gives the correct sign for
+             * objvarval */
+            tree = SCIPgetExprtreesNonlinear(model->scip, model->objcons)[0];
+            SCIP_in_CSIP(SCIPcreateConsBasicNonlinear(model->scip, &tempcons,
+                     "temp_nonlin_obj", 0, NULL, NULL, 1, &tree, NULL,
+                     0.0, 0.0));
+            SCIP_in_CSIP(SCIPgetViolationNonlinear(model->scip, tempcons,
+                     model->initialsol, &objvarval) );
+
+            SCIP_in_CSIP(SCIPreleaseCons(model->scip, &tempcons));
+
+            SCIP_in_CSIP(SCIPsetSolVals(model->scip, model->initialsol, 1,
+                     &model->objvar, &objvarval));
+        }
+
+
         SCIP_in_CSIP(SCIPaddSolFree(model->scip, &model->initialsol, &stored));
     }
 
