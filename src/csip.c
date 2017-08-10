@@ -86,6 +86,7 @@ struct csip_model
 
     // user-defined solution, is checked before solving
     SCIP_SOL *initialsol;
+    SCIP_Bool initialsolpartial;
 
     // store objective variable for nonlinear objective: the idea is to add an
     // auxiliary constraint and variable to represent nonlinear objectives. If
@@ -390,6 +391,7 @@ CSIP_RETCODE CSIPcreateModel(CSIP_MODEL **modelptr)
     model->nlazycb = 0;
     model->nheur = 0;
     model->initialsol = NULL;
+    model->initialsolpartial = FALSE;
     model->objvar = NULL;
     model->objcons = NULL;
     model->objtype = CSIP_OBJTYPE_LINEAR;
@@ -944,8 +946,12 @@ CSIP_RETCODE CSIPsolve(CSIP_MODEL *model)
          * constraint temporarily to an equality constraint. However the
          * nonlinear contraint handler doesn't allow to change sides, so
          * we have to create a brand new constraint to compute the violation
+         *
+         * This is not true if the user has given a partial sol, because then
+         * we can safely leave the value for the objval unspecified. In fact,
+         * that's preferred, because computing the violation might fail.
          */
-        if (model->objcons != NULL)
+        if (model->objcons != NULL && !(model->initialsolpartial))
         {
             SCIP_CONS* tempcons;
             SCIP_Real objvarval;
@@ -1131,13 +1137,13 @@ int CSIPgetNumConss(CSIP_MODEL *model)
 CSIP_RETCODE CSIPsetInitialSolution(CSIP_MODEL *model, double *values)
 {
     // are there missing values?
-    SCIP_Bool issolpartial = FALSE;
+    model->initialsolpartial = FALSE;
     for(int i = 0; i < model->nvars; ++i)
     {
         SCIP_Real val = values[i];
         if(val != val) // check for NaN
         {
-            issolpartial = TRUE;
+            model->initialsolpartial = TRUE;
             break;
         }
     }
@@ -1150,7 +1156,7 @@ CSIP_RETCODE CSIPsetInitialSolution(CSIP_MODEL *model, double *values)
     assert(model->initialsol == NULL);
 
     // create new solution object
-    if(issolpartial)
+    if(model->initialsolpartial)
     {
         SCIP_in_CSIP(SCIPcreatePartialSol(model->scip, &model->initialsol, NULL));
 
@@ -1173,7 +1179,6 @@ CSIP_RETCODE CSIPsetInitialSolution(CSIP_MODEL *model, double *values)
         SCIP_in_CSIP(SCIPsetSolVals(model->scip, model->initialsol, model->nvars,
                                     model->vars, values));
     }
-
 
     // it will be given to SCIP in the CSIPsolve call
 

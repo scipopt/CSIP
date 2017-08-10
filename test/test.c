@@ -1068,6 +1068,78 @@ static void test_initialsol_partial()
     CHECK(CSIPfreeModel(m));
 }
 
+static void test_initialsol_nlp_partial()
+{
+    /*
+      attempt to solve a small NLP problem, but specify limits such that only
+      the user-defined, partial initial solution is found
+
+      max x + y - z^3
+      s.t. z^2 <= 1
+      x, y <= 0
+
+      optimal solution is 0,  0, -1
+      initial solution is ?, -1, -1
+    */
+    int nops = 3;
+    CSIP_OP ops[] = {VARIDX, CONST, POW};
+    int children[] = {2, 0, 0, 1};
+    int begin[] = {0, 1, 2, 4};
+    double values[] = {2.0};
+    double lhs = -INFINITY;
+    double rhs = 1;
+
+    CSIP_OP obj_ops[] = {VARIDX, VARIDX, VARIDX, CONST, POW, MINUS, SUM};
+    int obj_children[] = {0, 1, 2, 0, 2, 3, 4, 0, 1, 5};
+    int obj_begin[] = {0, 1, 2, 3, 4, 6, 7, 10};
+    double obj_values[] = {3.0};
+
+    CSIP_MODEL *m;
+    double solution[3];
+    double mynan = 0.0/0.0;
+    double initialsol[3] = {mynan, -1, -1};
+
+    mu_assert_int("Not Not a Number!", (mynan != mynan), 1);
+
+    CHECK(CSIPcreateModel(&m));
+    CHECK(CSIPsetIntParam(m, "display/verblevel", 2));
+    CHECK(CSIPsetIntParam(m, "limits/solutions", 1));
+    CHECK(CSIPsetIntParam(m, "heuristics/trivial/freq", -1));
+
+    int x_idx, y_idx, z_idx;
+    CHECK(CSIPaddVar(m, -INFINITY, 0.0, CSIP_VARTYPE_INTEGER, &x_idx));
+    CHECK(CSIPaddVar(m, -INFINITY, 0.0, CSIP_VARTYPE_INTEGER, &y_idx));
+    CHECK(CSIPaddVar(m, -INFINITY, INFINITY, CSIP_VARTYPE_INTEGER, &z_idx));
+    mu_assert_int("Wrong var index!", x_idx, 0);
+    mu_assert_int("Wrong var index!", y_idx, 1);
+    mu_assert_int("Wrong var index!", z_idx, 2);
+
+    int cons_idx;
+    CHECK(CSIPaddNonLinCons(m, nops, ops, children, begin, values, lhs, rhs,
+                            &cons_idx));
+    mu_assert_int("Wrong cons index!", cons_idx, 0);
+
+    CHECK(CSIPsetNonlinearObj(m, 7, obj_ops, obj_children, obj_begin, obj_values));
+    CHECK(CSIPsetSenseMaximize(m));
+
+    CHECK(CSIPsetInitialSolution(m, initialsol));
+
+    CHECK(CSIPsolve(m));
+
+    int solvestatus = CSIPgetStatus(m);
+    mu_assert_int("Wrong status!", solvestatus, CSIP_STATUS_USERLIMIT);
+
+    double objval = CSIPgetObjValue(m);
+    mu_assert_near("Wrong objective value!", objval, 0 - 1.0 + 1.0);
+
+    CHECK(CSIPgetVarValues(m, solution));
+    mu_assert_near("Wrong solution!", solution[0], 0.0);
+    mu_assert_near("Wrong solution!", solution[1], -1.0);
+    mu_assert_near("Wrong solution!", solution[2], -1.0);
+
+    CHECK(CSIPfreeModel(m));
+}
+
 CSIP_RETCODE heurcb(CSIP_MODEL *model, CSIP_HEURDATA *heurdata, void *userdata)
 {
     double sol[] = {2.0, 2.0};
@@ -1166,6 +1238,7 @@ int main(int argc, char **argv)
     mu_run_test(test_initialsol);
     mu_run_test(test_initialsol_nlp);
     mu_run_test(test_initialsol_partial);
+    mu_run_test(test_initialsol_nlp_partial);
     mu_run_test(test_heurcb);
     mu_run_test(test_params);
 
