@@ -1014,6 +1014,60 @@ static void test_initialsol_nlp()
     CHECK(CSIPfreeModel(m));
 }
 
+static void test_initialsol_partial()
+{
+    /*
+      attempt to solve a small MIP problem, but specify limits such that only
+      the user-defined partial initial solution is found
+
+      max x + 2y
+      s.t. x + y == 2
+      0 <= x, y <= 2  (integer)
+
+      optimal solution is 0,  2
+      initial solution is 1,  ?  (partial)
+    */
+
+    CSIP_MODEL *m;
+    int indices[2] = {0, 1};
+    double solution[2];
+    double lincoef[2] = {1.0, 1.0};
+    double objcoef[2] = {1.0, 2.0};
+    double mynan = 0.0/0.0;
+    double initialsol[2] = {1, mynan};
+
+    mu_assert_int("Not Not a Number!", (mynan != mynan), 1);
+
+    CHECK(CSIPcreateModel(&m));
+    CHECK(CSIPsetIntParam(m, "display/verblevel", 2));
+    CHECK(CSIPsetIntParam(m, "limits/solutions", 1));
+    CHECK(CSIPsetIntParam(m, "heuristics/trivial/freq", -1));
+
+    CHECK(CSIPaddVar(m, 0.0, 2.0, CSIP_VARTYPE_INTEGER, NULL));
+    CHECK(CSIPaddVar(m, 0.0, 2.0, CSIP_VARTYPE_INTEGER, NULL));
+
+    CHECK(CSIPaddLinCons(m, 2, indices, lincoef, 2.0, 2.0, NULL));
+
+    CHECK(CSIPsetObj(m, 2, indices, objcoef));
+    CHECK(CSIPsetSenseMaximize(m));
+
+    CHECK(CSIPsetInitialSolution(m, initialsol));
+
+    CHECK(CSIPsolve(m));
+
+    int solvestatus = CSIPgetStatus(m);
+    mu_assert_int("Wrong status!", solvestatus, CSIP_STATUS_USERLIMIT);
+
+    double objval = CSIPgetObjValue(m);
+    mu_assert_near("Wrong objective value!", objval, 1.0*1.0 + 2.0*1.0);
+
+    CHECK(CSIPgetVarValues(m, solution));
+    mu_assert_near("Wrong solution!", solution[0], 1.0);
+    mu_assert_near("Wrong solution!", solution[1], 1.0);
+
+    CHECK(CSIPfreeModel(m));
+}
+
 CSIP_RETCODE heurcb(CSIP_MODEL *model, CSIP_HEURDATA *heurdata, void *userdata)
 {
     double sol[] = {2.0, 2.0};
@@ -1111,6 +1165,7 @@ int main(int argc, char **argv)
     mu_run_test(test_changevartype);
     mu_run_test(test_initialsol);
     mu_run_test(test_initialsol_nlp);
+    mu_run_test(test_initialsol_partial);
     mu_run_test(test_heurcb);
     mu_run_test(test_params);
 
