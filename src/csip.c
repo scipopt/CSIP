@@ -7,7 +7,7 @@
 
 #define CSIP_MAJOR_VERSION 0
 #define CSIP_MINOR_VERSION 4
-#define CSIP_PATCH_VERSION 2
+#define CSIP_PATCH_VERSION 3
 
 /* objective type */
 typedef int CSIP_OBJTYPE;
