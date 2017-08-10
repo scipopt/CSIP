@@ -226,7 +226,8 @@ int CSIPgetNumVars(CSIP_MODEL *model);
 int CSIPgetNumConss(CSIP_MODEL *model);
 
 // Supply a solution (as a dense array) to be checked at the beginning of the
-// solving process. Only complete solutions are supported.
+// solving process. Partial solutions are also supported: Indicate missing
+// values with NaN.
 CSIP_RETCODE CSIPsetInitialSolution(CSIP_MODEL *model, double *values);
 
 /* lazy constraint callback functions */

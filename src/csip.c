@@ -1130,20 +1130,52 @@ int CSIPgetNumConss(CSIP_MODEL *model)
 
 CSIP_RETCODE CSIPsetInitialSolution(CSIP_MODEL *model, double *values)
 {
-    if (model->initialsol != NULL) // was solution already given?
+    // are there missing values?
+    SCIP_Bool issolpartial = FALSE;
+    for(int i = 0; i < model->nvars; ++i)
+    {
+        SCIP_Real val = values[i];
+        if(val != val) // check for NaN
+        {
+            issolpartial = TRUE;
+            break;
+        }
+    }
+
+    // was solution already given?
+    if (model->initialsol != NULL)
     {
         SCIP_in_CSIP(SCIPfreeSol(model->scip, &model->initialsol));
     }
     assert(model->initialsol == NULL);
 
     // create new solution object
-    SCIP_in_CSIP(SCIPcreateSol(model->scip, &model->initialsol, NULL));
+    if(issolpartial)
+    {
+        SCIP_in_CSIP(SCIPcreatePartialSol(model->scip, &model->initialsol, NULL));
 
-    // copy the given values
-    SCIP_in_CSIP(SCIPsetSolVals(model->scip, model->initialsol, model->nvars,
-                                model->vars, values));
+        // give only the proper values, skip NaN
+        for(int i = 0; i < model->nvars; ++i)
+        {
+            SCIP_Real val = values[i];
+            if(val == val) // check for NaN
+            {
+                SCIP_in_CSIP(SCIPsetSolVal(model->scip, model->initialsol,
+                                           model->vars[i], val));
+            }
+        }
+    }
+    else
+    {
+        SCIP_in_CSIP(SCIPcreateSol(model->scip, &model->initialsol, NULL));
 
-    // it will be given to SCIP in the CSIPsolve
+        // copy the given values
+        SCIP_in_CSIP(SCIPsetSolVals(model->scip, model->initialsol, model->nvars,
+                                    model->vars, values));
+    }
+
+
+    // it will be given to SCIP in the CSIPsolve call
 
     return CSIP_RETCODE_OK;
 }
