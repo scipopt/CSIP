@@ -282,3 +282,8 @@ CSIP_RETCODE CSIPaddHeuristicCallback(
 
 // Get access to the internal SCIP solver. Use at your own risk!
 void *CSIPgetInternalSCIP(CSIP_MODEL *model);
+
+/* additional features (on top of SCIP) */
+
+// Set a prefix for all messages.
+CSIP_RETCODE CSIPsetMessagePrefix(CSIP_MODEL *model, const char* prefix);

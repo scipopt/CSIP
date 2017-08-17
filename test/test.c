@@ -1212,6 +1212,23 @@ static void test_params()
     CHECK(CSIPfreeModel(m));
 }
 
+static void test_prefix()
+{
+    CSIP_MODEL *m;
+
+    CHECK(CSIPcreateModel(&m));
+    CHECK(CSIPsetIntParam(m, "display/verblevel", 2));
+
+    char prefix[] = "test!prefix - ";
+    CHECK(CSIPsetMessagePrefix(m, prefix));
+
+    CHECK(CSIPsolve(m));
+    CHECK(CSIPfreeModel(m));
+
+    // just checks that nothing crashes
+    // need to increase verblevel to see some output
+}
+
 int main(int argc, char **argv)
 {
     printf("Running tests...\n");
@@ -1241,6 +1258,7 @@ int main(int argc, char **argv)
     mu_run_test(test_initialsol_nlp_partial);
     mu_run_test(test_heurcb);
     mu_run_test(test_params);
+    mu_run_test(test_prefix);
 
     printf("All tests passed!\n");
     return 0;

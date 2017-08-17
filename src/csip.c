@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "csip.h"
 #include "nlpi/pub_expr.h"
 #include "scip/scip.h"
@@ -96,6 +98,9 @@ struct csip_model
     SCIP_VAR *objvar;
     SCIP_CONS *objcons;
     CSIP_OBJTYPE objtype;
+
+    // store message handler to allow for a prefix
+    SCIP_MESSAGEHDLR* msghdlr;
 };
 
 /*
@@ -395,6 +400,7 @@ CSIP_RETCODE CSIPcreateModel(CSIP_MODEL **modelptr)
     model->objvar = NULL;
     model->objcons = NULL;
     model->objtype = CSIP_OBJTYPE_LINEAR;
+    model->msghdlr = NULL;
 
     CSIP_CALL(CSIPsetIntParam(model, "display/width", 80));
 
@@ -1577,6 +1583,53 @@ CSIP_RETCODE CSIPaddHeuristicCallback(
 
     SCIP_in_CSIP(SCIPsetHeurFree(scip, heur, heurFreeUser));
     model->nheur += 1;
+
+    return CSIP_RETCODE_OK;
+}
+
+/*
+ *  Message handler with a prefix
+ */
+
+
+struct SCIP_MessagehdlrData
+{
+    char* prefix;
+};
+
+static void logMessage(
+    SCIP_MESSAGEHDLR* messagehdlr, FILE* file, const char* msg)
+{
+    SCIP_MESSAGEHDLRDATA* messagehdlrdata;
+    messagehdlrdata = SCIPmessagehdlrGetData(messagehdlr);
+
+    fputs(messagehdlrdata->prefix, file);
+    fputs(msg, file);
+    fflush(file);
+    return;
+}
+
+static SCIP_DECL_MESSAGEHDLRFREE(messageHdlrFree)
+{
+    SCIP_MESSAGEHDLRDATA* messagehdlrdata = SCIPmessagehdlrGetData(messagehdlr);
+    free(messagehdlrdata->prefix);
+    SCIPfreeMemory(NULL, &messagehdlrdata);
+    return SCIP_OKAY;
+}
+
+CSIP_RETCODE CSIPsetMessagePrefix(CSIP_MODEL *model, const char* prefix)
+{
+    SCIP_MESSAGEHDLR* messagehdlr = NULL;
+    SCIP_MESSAGEHDLRDATA* messagehdlrdata = NULL;
+
+    SCIP_in_CSIP(SCIPallocMemory(NULL, &messagehdlrdata));
+    messagehdlrdata->prefix = strdup(prefix);
+    SCIP_in_CSIP(SCIPmessagehdlrCreate(&messagehdlr, FALSE, NULL, FALSE,
+                                       logMessage, logMessage, logMessage,
+                                       messageHdlrFree, messagehdlrdata));
+
+    SCIP_in_CSIP(SCIPsetMessagehdlr(model->scip, messagehdlr));
+    SCIP_in_CSIP(SCIPmessagehdlrRelease(&messagehdlr));
 
     return CSIP_RETCODE_OK;
 }
