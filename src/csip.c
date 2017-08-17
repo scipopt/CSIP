@@ -1631,7 +1631,5 @@ CSIP_RETCODE CSIPsetMessagePrefix(CSIP_MODEL *model, const char* prefix)
     SCIP_in_CSIP(SCIPsetMessagehdlr(model->scip, messagehdlr));
     SCIP_in_CSIP(SCIPmessagehdlrRelease(&messagehdlr));
 
-    // TODO: will this be freed properly now?
-    // TODO: do we have to clean up after previous handlers?
     return CSIP_RETCODE_OK;
 }
