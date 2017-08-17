@@ -1623,7 +1623,7 @@ CSIP_RETCODE CSIPsetMessagePrefix(CSIP_MODEL *model, const char* prefix)
     SCIP_MESSAGEHDLRDATA* messagehdlrdata = NULL;
 
     SCIP_in_CSIP(SCIPallocMemory(NULL, &messagehdlrdata));
-    strcpy(messagehdlrdata->prefix, prefix);
+    messagehdlrdata->prefix = strdup(prefix);
     SCIP_in_CSIP(SCIPmessagehdlrCreate(&messagehdlr, FALSE, NULL, FALSE,
                                        logMessage, logMessage, logMessage,
                                        messageHdlrFree, messagehdlrdata));
