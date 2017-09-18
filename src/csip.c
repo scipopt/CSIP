@@ -88,7 +88,6 @@ struct csip_model
 
     // user-defined solution, is checked before solving
     SCIP_SOL *initialsol;
-    SCIP_Bool initialsolpartial;
 
     // store objective variable for nonlinear objective: the idea is to add an
     // auxiliary constraint and variable to represent nonlinear objectives. If
@@ -396,7 +395,6 @@ CSIP_RETCODE CSIPcreateModel(CSIP_MODEL **modelptr)
     model->nlazycb = 0;
     model->nheur = 0;
     model->initialsol = NULL;
-    model->initialsolpartial = FALSE;
     model->objvar = NULL;
     model->objcons = NULL;
     model->objtype = CSIP_OBJTYPE_LINEAR;
@@ -946,6 +944,8 @@ CSIP_RETCODE CSIPsolve(CSIP_MODEL *model)
     if (model->initialsol != NULL)
     {
         unsigned int stored;
+        SCIP_Bool initialsolpartial =
+            (SCIPsolGetOrigin(model->initialsol) == SCIP_SOLORIGIN_PARTIAL);
 
         /* if objective is nonlinear, we need to extend the initial sol with
          * the value of objvar. For this we need to change the objective
@@ -957,7 +957,7 @@ CSIP_RETCODE CSIPsolve(CSIP_MODEL *model)
          * we can safely leave the value for the objval unspecified. In fact,
          * that's preferred, because computing the violation might fail.
          */
-        if (model->objcons != NULL && !(model->initialsolpartial))
+        if (model->objcons != NULL && !initialsolpartial)
         {
             SCIP_CONS* tempcons;
             SCIP_Real objvarval;
@@ -1143,13 +1143,13 @@ int CSIPgetNumConss(CSIP_MODEL *model)
 CSIP_RETCODE CSIPsetInitialSolution(CSIP_MODEL *model, double *values)
 {
     // are there missing values?
-    model->initialsolpartial = FALSE;
+    SCIP_Bool initialsolpartial = FALSE;
     for(int i = 0; i < model->nvars; ++i)
     {
         SCIP_Real val = values[i];
         if(val != val) // check for NaN
         {
-            model->initialsolpartial = TRUE;
+            initialsolpartial = TRUE;
             break;
         }
     }
@@ -1162,7 +1162,7 @@ CSIP_RETCODE CSIPsetInitialSolution(CSIP_MODEL *model, double *values)
     assert(model->initialsol == NULL);
 
     // create new solution object
-    if(model->initialsolpartial)
+    if(initialsolpartial)
     {
         SCIP_in_CSIP(SCIPcreatePartialSol(model->scip, &model->initialsol, NULL));
 
