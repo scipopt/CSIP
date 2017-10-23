@@ -293,6 +293,17 @@ CSIP_RETCODE createExprtree(
     return CSIP_RETCODE_OK;
 }
 
+static
+char *strDup(const char *s) {
+    size_t size = strlen(s) + 1;
+    char *p = malloc(size);
+    if (p)
+    {
+        memcpy(p, s, size);
+    }
+    return p;
+}
+
 /** When the objective is nonlinear we use the epigraph representation.
  * However, changing the objective sense is not  straightforward in that
  * case. The purpose of this function is to change an epigraph objective
@@ -1623,7 +1634,7 @@ CSIP_RETCODE CSIPsetMessagePrefix(CSIP_MODEL *model, const char* prefix)
     SCIP_MESSAGEHDLRDATA* messagehdlrdata = NULL;
 
     SCIP_in_CSIP(SCIPallocMemory(NULL, &messagehdlrdata));
-    messagehdlrdata->prefix = strdup(prefix);
+    messagehdlrdata->prefix = strDup(prefix);
     SCIP_in_CSIP(SCIPmessagehdlrCreate(&messagehdlr, FALSE, NULL, FALSE,
                                        logMessage, logMessage, logMessage,
                                        messageHdlrFree, messagehdlrdata));
