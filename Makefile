@@ -18,7 +18,7 @@ CSIPSRCDIR 	= $(CSIPDIR)/src
 CSIPINC 	= $(CSIPDIR)/include
 CSIPLIBDIR 	= $(CSIPDIR)/lib
 
-CFLAGS 		= -Wall -pedantic
+CFLAGS 		= -std=c99 -Wall -pedantic
 
 SCIPSRC 	= $(CSIPLIBDIR)/include
 SCIPLIB 	= -lscipopt
