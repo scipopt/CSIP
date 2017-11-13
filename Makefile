@@ -67,9 +67,9 @@ test:
 links:
 	@echo "Creating symbolic links to headers and library within SCIPOPTDIR ($(SCIPOPTDIR))."
 	@bash -c 'cd lib; \
-		if [ -e $(SCIPOPTDIR)/scip-*/src/scip/scip.h ] ; \
+		if [ -e $(SCIPOPTDIR)/scip*/src/scip/scip.h ] ; \
 		then \
-			ln -s $(SCIPOPTDIR)/scip-*/src include; \
+			ln -s $(SCIPOPTDIR)/scip*/src include; \
 		else \
 			echo "ERROR: no SCIP headers found in SCIPOPTDIR!" ; \
 			cd ..; \
