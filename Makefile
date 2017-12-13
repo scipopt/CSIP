@@ -21,7 +21,7 @@ CSIPLIBDIR 	= $(CSIPDIR)/lib
 CFLAGS 		= -std=c99 -Wall -pedantic
 
 SCIPSRC 	= $(CSIPLIBDIR)/include
-SCIPLIB 	= -lscipopt
+SCIPLIB 	= -lscip
 
 FLAGS 		= -I$(SCIPSRC) -I$(CSIPINC)
 LFLAGS 		= -L$(CSIPLIBDIR)
@@ -29,7 +29,7 @@ LINKFLAGS 	= -Wl,-rpath,$(CSIPLIBDIR)
 
 TESTDIR 	= $(CSIPDIR)/test
 TESTFLAGS 	= -I$(CSIPINC) -g
-TESTLIBS 	= -lm -lcsip -lscipopt
+TESTLIBS 	= -lm -lcsip -lscip
 LINKTESTFLAGS 	= $(LINKFLAGS)
 LINKTESTFLAGS 	+= -Wl,-rpath,$(CSIPLIBDIR)
 LTESTFLAGS 	= -L$(CSIPLIBDIR)
@@ -67,9 +67,9 @@ test:
 links:
 	@echo "Creating symbolic links to headers and library within SCIPOPTDIR ($(SCIPOPTDIR))."
 	@bash -c 'cd lib; \
-		if [ -e $(SCIPOPTDIR)/scip*/src/scip/scip.h ] ; \
+		if [ -e $(SCIPOPTDIR)/../scip*/src/scip/scip.h ] ; \
 		then \
-			ln -s $(SCIPOPTDIR)/scip*/src include; \
+			ln -s $(SCIPOPTDIR)/../scip*/src include; \
 		else \
 			echo "ERROR: no SCIP headers found in SCIPOPTDIR!" ; \
 			cd ..; \
@@ -79,9 +79,9 @@ links:
 		cd ..;\
 		'
 	@bash -c 'cd lib; \
-		if [ -e $(SCIPOPTDIR)/lib/libscipopt.so ] ; \
+		if [ -e $(SCIPOPTDIR)/lib/libscip.so ] ; \
 		then \
-			ln -s $(SCIPOPTDIR)/lib/libscipopt.so; \
+			ln -s $(SCIPOPTDIR)/lib/libscip* .; \
 		else \
 			echo "ERROR: no SCIP library found in SCIPOPTDIR!" ; \
 			cd ..; \

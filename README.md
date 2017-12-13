@@ -24,18 +24,20 @@ CSIP depends on the [SCIP Optimization Suite](http://scip.zib.de/#scipoptsuite).
 Starting with release 0.4.0, **CSIP only supports SCIP Optimization Suite
 4.0.0** or newer.
 
-[Download](http://scip.zib.de/download.php?fname=scipoptsuite-4.0.0.tgz)
-and extract the source files, then build the shared library
-(containing SCIP and SoPlex) with
+[Download](http://scip.zib.de/download.php?fname=scipoptsuite-5.0.0.tgz)
+the SCIP Optimization Suite and extract the source files.
+Build the shared library (containing SCIP and SoPlex) with `cmake` via
 
-    make SHARED=true GMP=false READLINE=false ZLIB=false scipoptlib
+    mkdir build
+    cd build
+    cmake ..
+    make
     
-which will produce a file `libscipopt.so`.
 
 To build CSIP, set the environment variable `SCIPOPTDIR` to point to the
-directory that contains the `scipoptsuite` sources. CSIP needs the library in
-`${SCIPOPTDIR}/lib/scipoptlib.so` and the C header files in
-`${SCIPOPTDIR}/scip-*/src/`.
+directory used to build `scipoptsuite`, that is, `<path to SCIP Optimization Suite>/build`.
+CSIP needs the SCIP library in `${SCIPOPTDIR}/lib/` and the C header files in
+`${SCIPOPTDIR}/../scip/src/`.
 
 ### CSIP
 
