@@ -21,23 +21,19 @@ single callback function.
 ### SCIP and SoPlex
 
 CSIP depends on the [SCIP Optimization Suite](http://scip.zib.de/#scipoptsuite).
-Starting with release 0.4.0, **CSIP only supports SCIP Optimization Suite
-4.0.0** or newer.
+Starting with release 0.5.0, **CSIP only supports SCIP Optimization Suite
+5.0.0** or newer.
 
-[Download](http://scip.zib.de/download.php?fname=scipoptsuite-5.0.0.tgz)
-the SCIP Optimization Suite and extract the source files.
-Build the shared library (containing SCIP and SoPlex) with `cmake` via
+[Download](http://scip.zib.de/download.php?fname=scipoptsuite-5.0.0.tgz) the
+SCIP Optimization Suite and extract the source files. Now choose a destination
+path for the installation and set the environment variable `SCIPOPTDIR` there.
+Build the shared library (containing SCIP and SoPlex) using `cmake` via
 
     mkdir build
     cd build
-    cmake ..
+    cmake -DCMAKE_INSTALL_PREFIX=$SCIPOPTDIR ..
     make
-    
-
-To build CSIP, set the environment variable `SCIPOPTDIR` to point to the
-directory used to build `scipoptsuite`, that is, `<path to SCIP Optimization Suite>/build`.
-CSIP needs the SCIP library in `${SCIPOPTDIR}/lib/` and the C header files in
-`${SCIPOPTDIR}/../scip/src/`.
+    make install
 
 ### CSIP
 
