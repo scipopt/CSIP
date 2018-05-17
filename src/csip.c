@@ -9,7 +9,7 @@
 
 #define CSIP_MAJOR_VERSION 0
 #define CSIP_MINOR_VERSION 5
-#define CSIP_PATCH_VERSION 1
+#define CSIP_PATCH_VERSION 2
 
 /* objective type */
 typedef int CSIP_OBJTYPE;
@@ -410,8 +410,6 @@ CSIP_RETCODE CSIPcreateModel(CSIP_MODEL **modelptr)
     model->objcons = NULL;
     model->objtype = CSIP_OBJTYPE_LINEAR;
     model->msghdlr = NULL;
-
-    CSIP_CALL(CSIPsetIntParam(model, "display/width", 80));
 
     return CSIP_RETCODE_OK;
 }
