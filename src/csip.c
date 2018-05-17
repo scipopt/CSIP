@@ -874,18 +874,10 @@ CSIP_RETCODE CSIPsetNonlinearObj(
     SCIP_EXPRTREE *tree;
     SCIP_CONS *cons;
 
-    CSIP_CALL(createExprtree(model, nops, ops, children, begin,
-                             values, &tree));
-
+    // get scip, free transform and remove old objective if any
     scip = model->scip;
     SCIP_in_CSIP(SCIPfreeTransform(scip));
 
-    // create nonlinear objective constraint
-    SCIP_in_CSIP(SCIPcreateConsBasicNonlinear(scip, &cons,
-                 "nonlin_obj", 0, NULL, NULL, 1, &tree, NULL,
-                 -SCIPinfinity(scip), 0.0));
-
-    // add objvar to nonlinear objective
     if (model->objvar != NULL)
     {
         SCIP_in_CSIP(SCIPchgVarObj(scip, model->objvar, 0.0));
@@ -899,6 +891,21 @@ CSIP_RETCODE CSIPsetNonlinearObj(
     assert(model->objvar == NULL);
     assert(model->objcons == NULL);
 
+    // do nothing more if we received an empty expression tree
+    if( nops == 1 && ops[0] != SCIP_EXPR_VARIDX )
+    {
+       return CSIP_RETCODE_OK;
+    }
+
+    CSIP_CALL(createExprtree(model, nops, ops, children, begin,
+                             values, &tree));
+
+    // create nonlinear objective constraint
+    SCIP_in_CSIP(SCIPcreateConsBasicNonlinear(scip, &cons,
+                 "nonlin_obj", 0, NULL, NULL, 1, &tree, NULL,
+                 -SCIPinfinity(scip), 0.0));
+
+    // add objvar to nonlinear objective
     SCIP_in_CSIP(SCIPcreateVarBasic(scip, &model->objvar, NULL,
                                     -SCIPinfinity(scip), SCIPinfinity(scip), 1.0,
                                     SCIP_VARTYPE_CONTINUOUS));
