@@ -892,6 +892,7 @@ CSIP_RETCODE CSIPsetNonlinearObj(
     assert(model->objcons == NULL);
 
     // do nothing more if we received an empty expression tree
+    assert(nops >= 1);
     if( nops == 1 && ops[0] != SCIP_EXPR_VARIDX )
     {
        return CSIP_RETCODE_OK;
