@@ -282,6 +282,47 @@ static void test_nlp()
     CHECK(CSIPfreeModel(m));
 }
 
+static void test_nlp_no_obj()
+{
+    /*
+      Small feasibility NLP:
+      find z
+      s.t. z^2 <= 1
+    */
+    int nops = 3;
+    CSIP_OP ops[] = {VARIDX, CONST, POW};
+    int children[] = {0, 0, 0, 1};
+    int begin[] = {0, 1, 2, 4};
+    double values[] = {2.0};
+    double lhs = -INFINITY;
+    double rhs = 1;
+
+    CSIP_MODEL *m;
+    double solution[1];
+
+    CHECK(CSIPcreateModel(&m));
+    CHECK(CSIPsetIntParam(m, "display/verblevel", 2));
+
+    int z_idx;
+    CHECK(CSIPaddVar(m, -INFINITY, INFINITY, CSIP_VARTYPE_CONTINUOUS, &z_idx));
+    mu_assert_int("Wrong var index!", z_idx, 0);
+
+    int cons_idx;
+    CHECK(CSIPaddNonLinCons(m, nops, ops, children, begin, values, lhs, rhs,
+                            &cons_idx));
+    mu_assert_int("Wrong cons index!", cons_idx, 0);
+
+    CHECK(CSIPsolve(m));
+
+    int solvestatus = CSIPgetStatus(m);
+    mu_assert_int("Wrong status!", solvestatus, CSIP_STATUS_OPTIMAL);
+
+    CHECK(CSIPgetVarValues(m, solution));
+    mu_assert("Violated constraint!", solution[0]*solution[0] <=  1.001);
+
+    CHECK(CSIPfreeModel(m));
+}
+
 static void test_quadobj()
 {
     /*
@@ -1239,6 +1280,7 @@ int main(int argc, char **argv)
     mu_run_test(test_mip3);
     mu_run_test(test_socp);
     mu_run_test(test_nlp);
+    mu_run_test(test_nlp_no_obj);
     mu_run_test(test_quadobj);
     mu_run_test(test_lazy);
     mu_run_test(test_lazy2);
