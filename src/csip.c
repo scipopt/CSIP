@@ -661,9 +661,9 @@ CSIP_RETCODE CSIPaddSOS1(
     SCIP *scip = model->scip;
     SCIP_CONS *cons;
     SCIP_VAR **vars = (SCIP_VAR **) malloc(numindices * sizeof(SCIP_VAR *));
+    double* auxweights = weights;
 
     SCIP_in_CSIP(SCIPfreeTransform(scip));
-
     if (vars == NULL)
     {
         return CSIP_RETCODE_NOMEMORY;
@@ -673,10 +673,28 @@ CSIP_RETCODE CSIPaddSOS1(
         vars[i] = model->vars[indices[i]];
     }
 
+    /* give weights to avoid an assert in SCIP */
+    if (weights == NULL)
+    {
+       auxweights = (double *) malloc(numindices * sizeof(double));
+       if (auxweights == NULL)
+       {
+          return CSIP_RETCODE_NOMEMORY;
+       }
+       for (int i = 0; i < numindices; ++i)
+       {
+          auxweights[i] = i;
+       }
+    }
+
     SCIP_in_CSIP(SCIPcreateConsBasicSOS1(
-                     scip, &cons, "sos1", numindices, vars, weights));
+                     scip, &cons, "sos1", numindices, vars, auxweights));
     CSIP_CALL(addCons(model, cons, idx));
 
+    if (weights == NULL)
+    {
+       free(auxweights);
+    }
     free(vars);
 
     return CSIP_RETCODE_OK;
@@ -688,6 +706,7 @@ CSIP_RETCODE CSIPaddSOS2(
     SCIP *scip = model->scip;
     SCIP_CONS *cons;
     SCIP_VAR **vars = (SCIP_VAR **) malloc(numindices * sizeof(SCIP_VAR *));
+    double* auxweights = weights;
 
     SCIP_in_CSIP(SCIPfreeTransform(scip));
 
@@ -700,10 +719,28 @@ CSIP_RETCODE CSIPaddSOS2(
         vars[i] = model->vars[indices[i]];
     }
 
+    /* give weights to avoid an assert in SCIP */
+    if (weights == NULL)
+    {
+       auxweights = (double *) malloc(numindices * sizeof(double));
+       if (auxweights == NULL)
+       {
+          return CSIP_RETCODE_NOMEMORY;
+       }
+       for (int i = 0; i < numindices; ++i)
+       {
+          auxweights[i] = i;
+       }
+    }
+
     SCIP_in_CSIP(SCIPcreateConsBasicSOS2(
-                     scip, &cons, "sos2", numindices, vars, weights));
+                     scip, &cons, "sos2", numindices, vars, auxweights));
     CSIP_CALL(addCons(model, cons, idx));
 
+    if (weights == NULL)
+    {
+       free(auxweights);
+    }
     free(vars);
 
     return CSIP_RETCODE_OK;
