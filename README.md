@@ -1,7 +1,5 @@
 # CSIP
 
-[![Join the chat at https://gitter.im/leethargo/CSIP](https://badges.gitter.im/leethargo/CSIP.svg)](https://gitter.im/leethargo/CSIP?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
 An opinionated interface to the [SCIP](http://scip.zib.de/) solver in
 the C language. A restricted subset of the features is chosen, with
 the goal of making SCIP more accessible to novice users and other
@@ -15,6 +13,10 @@ The following constraint types are supported:
 
 Furthermore, users can implement a lazy constraint by implementing a
 single callback function.
+
+## Update (March 2019)
+
+This package was initially developed as a crutch for [SCIP.jl](https://github.com/SCIP-Interfaces/SCIP.jl), but is no longer used there. From now on, CSIP can be consideren unmaintained.
 
 ## Installation
 
